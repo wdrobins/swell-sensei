@@ -1,11 +1,13 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Waves, MapPin, Calendar, BookOpen, Settings, User } from 'lucide-react';
+import { Waves, MapPin, Calendar, BookOpen, Settings, User, LogOut, LogIn } from 'lucide-react';
 
 const Navigation: React.FC = () => {
   const location = useLocation();
+  const { user, signOut } = useAuth();
   
   const navItems = [
     { href: '/', label: 'Dashboard', icon: Waves },
@@ -78,10 +80,32 @@ const Navigation: React.FC = () => {
             })}
           </div>
 
-          {/* Settings */}
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-            <Settings className="h-4 w-4" />
-          </Button>
+          {/* Auth Actions */}
+          <div className="flex items-center gap-2">
+            {user ? (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={signOut}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </Button>
+            ) : (
+              <Button 
+                asChild
+                variant="ghost" 
+                size="sm" 
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Link to="/auth">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Sign In</span>
+                </Link>
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </nav>
