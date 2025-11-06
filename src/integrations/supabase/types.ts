@@ -217,7 +217,19 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      leaderboard_stats: {
+        Row: {
+          avatar_url: string | null
+          badges_earned: number | null
+          display_name: string | null
+          goals_completed: number | null
+          last_active: string | null
+          skill_level: string | null
+          total_sessions: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
