@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Calendar, MapPin, Waves } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
 
 interface Session {
   id: string;
@@ -102,12 +103,56 @@ const LogsPage = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-4 w-4" />
-                      {new Date(session.created_at).toLocaleString()}
+                  {session.spot_preferences && (
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center gap-4 text-sm">
+                        {session.spot_preferences.date && (
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-primary" />
+                            <span className="font-medium">
+                              {format(new Date(session.spot_preferences.date), 'EEEE, MMMM d, yyyy')}
+                            </span>
+                          </div>
+                        )}
+                        {session.spot_preferences.time && (
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-accent" />
+                            <span>{session.spot_preferences.time} ({session.spot_preferences.timeLabel})</span>
+                          </div>
+                        )}
+                        {session.spot_preferences.score && (
+                          <Badge variant={
+                            session.spot_preferences.score >= 80 ? 'success' :
+                            session.spot_preferences.score >= 60 ? 'accent' :
+                            session.spot_preferences.score >= 40 ? 'warning' : 'destructive'
+                          }>
+                            Score: {session.spot_preferences.score}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {session.spot_preferences.spots && session.spot_preferences.spots.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-medium text-muted-foreground uppercase mb-2">Recommended Spots</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {session.spot_preferences.spots.map((spot: string, idx: number) => (
+                              <div key={idx} className="flex items-center gap-1 text-sm">
+                                <MapPin className="h-3 w-3 text-muted-foreground" />
+                                <span>{spot}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {session.spot_preferences.conditions && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Waves className="h-4 w-4" />
+                          <span>{session.spot_preferences.conditions}</span>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

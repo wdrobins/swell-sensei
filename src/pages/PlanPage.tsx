@@ -4,10 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, MapPin, Waves, TrendingUp } from 'lucide-react';
 import { addDays, format, isToday, isTomorrow } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const PlanPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [isBooking, setIsBooking] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   const weeklyForecast = [
     { score: 75, conditions: '2ft Clean', quality: 'Good' },
@@ -36,9 +44,67 @@ const PlanPage: React.FC = () => {
     setSelectedTime(time);
   };
 
-  const handleBookSession = () => {
-    const dateStr = format(selectedDate, 'EEEE, MMMM d');
-    alert(`Session booked for ${dateStr} at ${selectedTime}!\n\nYou'll receive a reminder before your session.`);
+  const handleBookSession = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to book a session.",
+        variant: "destructive"
+      });
+      navigate('/auth');
+      return;
+    }
+
+    if (!selectedTime) return;
+
+    setIsBooking(true);
+
+    try {
+      // Find the selected time window details
+      const selectedWindow = timeWindows.find(w => w.time === selectedTime);
+      const dateStr = format(selectedDate, 'EEEE, MMMM d, yyyy');
+      
+      // Create session data
+      const sessionData = {
+        user_id: user.id,
+        title: `Surf Session - ${dateStr} at ${selectedTime}`,
+        description: `Planned session for ${selectedWindow?.label || 'surf session'}. Conditions: ${selectedWindow?.conditions || 'TBD'}`,
+        spot_preferences: {
+          date: selectedDate.toISOString(),
+          time: selectedTime,
+          timeLabel: selectedWindow?.label,
+          spots: selectedWindow?.spots || [],
+          score: selectedWindow?.bestScore || 0,
+          conditions: selectedWindow?.conditions || ''
+        }
+      };
+
+      const { error } = await supabase
+        .from('sessions')
+        .insert(sessionData);
+
+      if (error) throw error;
+
+      toast({
+        title: "Session booked!",
+        description: `Your surf session for ${dateStr} at ${selectedTime} has been saved.`,
+      });
+
+      // Navigate to logs page after short delay
+      setTimeout(() => {
+        navigate('/logs');
+      }, 1500);
+
+    } catch (error) {
+      console.error('Error booking session:', error);
+      toast({
+        title: "Booking failed",
+        description: "There was an error booking your session. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsBooking(false);
+    }
   };
 
   return (
@@ -220,10 +286,11 @@ const PlanPage: React.FC = () => {
               <Button 
                 size="lg" 
                 onClick={handleBookSession}
+                disabled={isBooking}
                 className="w-full md:w-auto"
               >
                 <Calendar className="h-4 w-4 mr-2" />
-                Book This Session
+                {isBooking ? 'Booking...' : 'Book This Session'}
               </Button>
             </div>
           </CardContent>
