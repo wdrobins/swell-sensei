@@ -2,20 +2,42 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, MapPin, Waves, TrendingUp } from 'lucide-react';
+import { Calendar, Clock, MapPin, Waves, TrendingUp, UserPlus, Share2 } from 'lucide-react';
 import { addDays, format, isToday, isTomorrow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const PlanPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [selectedSpots, setSelectedSpots] = useState<string[]>([]);
   const [isBooking, setIsBooking] = useState(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const allSurfSpots = [
+    'Jan Juc',
+    'Bells Beach',
+    '13th Beach',
+    'Torquay',
+    'Ocean Grove',
+    'Fairhaven',
+    'Lorne',
+    'Point Addis',
+    'Winki Pop'
+  ];
 
   const weeklyForecast = [
     { score: 75, conditions: '2ft Clean', quality: 'Good' },
@@ -42,6 +64,41 @@ const PlanPage: React.FC = () => {
 
   const handleTimeSelect = (time: string) => {
     setSelectedTime(time);
+  };
+
+  const toggleSpot = (spot: string) => {
+    setSelectedSpots(prev => 
+      prev.includes(spot) 
+        ? prev.filter(s => s !== spot)
+        : [...prev, spot]
+    );
+  };
+
+  const handleInvite = () => {
+    const sessionDetails = `Join me for a surf session on ${format(selectedDate, 'EEEE, MMMM d, yyyy')} at ${selectedTime}!`;
+    const shareUrl = window.location.href;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: 'Surf Session Invite',
+        text: sessionDetails,
+        url: shareUrl,
+      }).catch(() => {
+        // Fallback to clipboard
+        navigator.clipboard.writeText(`${sessionDetails}\n${shareUrl}`);
+        toast({
+          title: "Link copied!",
+          description: "Session details copied to clipboard.",
+        });
+      });
+    } else {
+      navigator.clipboard.writeText(`${sessionDetails}\n${shareUrl}`);
+      toast({
+        title: "Link copied!",
+        description: "Session details copied to clipboard.",
+      });
+    }
+    setInviteDialogOpen(false);
   };
 
   const handleBookSession = async () => {
@@ -74,6 +131,7 @@ const PlanPage: React.FC = () => {
           time: selectedTime,
           timeLabel: selectedWindow?.label,
           spots: selectedWindow?.spots || [],
+          selectedSpots: selectedSpots.length > 0 ? selectedSpots : selectedWindow?.spots || [],
           score: selectedWindow?.bestScore || 0,
           conditions: selectedWindow?.conditions || ''
         }
@@ -272,7 +330,47 @@ const PlanPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Book Session Button */}
+      {/* Surf Spot Selection */}
+      <Card className="mb-6 shadow-float">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-accent" />
+            Select Your Preferred Surf Spots
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            Choose the surf spots you'd like to consider for your session
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {allSurfSpots.map((spot) => (
+              <button
+                key={spot}
+                onClick={() => toggleSpot(spot)}
+                className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${
+                  selectedSpots.includes(spot)
+                    ? 'border-primary bg-primary/10 text-primary font-semibold'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  <span className="text-sm">{spot}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+          {selectedSpots.length > 0 && (
+            <div className="mt-4 p-3 bg-primary/5 rounded-lg">
+              <p className="text-sm font-medium">
+                Selected: {selectedSpots.join(', ')}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Book Session & Invite Buttons */}
       {selectedTime && (
         <Card className="mb-6 shadow-float bg-gradient-to-r from-success/10 to-accent/10 border-success/20">
           <CardContent className="p-6">
@@ -281,17 +379,58 @@ const PlanPage: React.FC = () => {
                 <h3 className="text-lg font-semibold mb-1">Ready to book your session?</h3>
                 <p className="text-sm text-muted-foreground">
                   {format(selectedDate, 'EEEE, MMMM d')} at {selectedTime}
+                  {selectedSpots.length > 0 && ` • ${selectedSpots.length} spot${selectedSpots.length > 1 ? 's' : ''} selected`}
                 </p>
               </div>
-              <Button 
-                size="lg" 
-                onClick={handleBookSession}
-                disabled={isBooking}
-                className="w-full md:w-auto"
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                {isBooking ? 'Booking...' : 'Book This Session'}
-              </Button>
+              <div className="flex gap-3 w-full md:w-auto">
+                <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      size="lg" 
+                      variant="outline"
+                      className="flex-1 md:flex-none"
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Invite Someone
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Invite Someone to Join</DialogTitle>
+                      <DialogDescription>
+                        Share this session with your surf buddies!
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="p-4 bg-muted rounded-lg">
+                        <p className="text-sm font-medium mb-2">Session Details:</p>
+                        <p className="text-sm text-muted-foreground">
+                          {format(selectedDate, 'EEEE, MMMM d, yyyy')} at {selectedTime}
+                        </p>
+                        {selectedSpots.length > 0 && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Spots: {selectedSpots.join(', ')}
+                          </p>
+                        )}
+                      </div>
+                      <Button onClick={handleInvite} className="w-full">
+                        <Share2 className="h-4 w-4 mr-2" />
+                        Share Session
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                
+                <Button 
+                  size="lg" 
+                  onClick={handleBookSession}
+                  disabled={isBooking}
+                  className="flex-1 md:flex-none"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {isBooking ? 'Booking...' : 'Book Session'}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
