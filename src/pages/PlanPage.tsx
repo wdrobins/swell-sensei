@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,11 +6,40 @@ import { Calendar, Clock, MapPin, Waves, TrendingUp } from 'lucide-react';
 import { addDays, format, isToday, isTomorrow } from 'date-fns';
 
 const PlanPage: React.FC = () => {
-  const timeWindows = [
-    { time: 'Dawn (6-8am)', spots: ['Jan Juc', 'Bells Beach'], bestScore: 85, conditions: 'Light offshore winds' },
-    { time: 'Morning (8-10am)', spots: ['13th Beach', 'Jan Juc'], bestScore: 78, conditions: 'Clean conditions' },
-    { time: 'Afternoon (2-4pm)', spots: ['13th Beach'], bestScore: 62, conditions: 'Onshore building' },
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+
+  const weeklyForecast = [
+    { score: 75, conditions: '2ft Clean', quality: 'Good' },
+    { score: 85, conditions: '3ft Offshore', quality: 'Excellent' },
+    { score: 45, conditions: '2ft Onshore', quality: 'Fair' },
+    { score: 65, conditions: '2-3ft Cross', quality: 'Good' },
+    { score: 30, conditions: '1ft Messy', quality: 'Poor' },
+    { score: 70, conditions: '2ft Clean', quality: 'Good' },
+    { score: 80, conditions: '3ft Glass', quality: 'Excellent' }
   ];
+
+  const timeWindows = [
+    { time: '6-8am', label: 'Dawn', spots: ['Jan Juc', 'Bells Beach'], bestScore: 85, conditions: 'Light offshore winds' },
+    { time: '8-10am', label: 'Morning', spots: ['13th Beach', 'Jan Juc'], bestScore: 78, conditions: 'Clean conditions' },
+    { time: '12-2pm', label: 'Midday', spots: ['Torquay', 'Ocean Grove'], bestScore: 55, conditions: 'Moderate winds' },
+    { time: '2-4pm', label: 'Afternoon', spots: ['13th Beach'], bestScore: 62, conditions: 'Onshore building' },
+    { time: '4-6pm', label: 'Evening', spots: ['Fairhaven', 'Lorne'], bestScore: 68, conditions: 'Cross-shore winds' },
+  ];
+
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    setSelectedTime(null); // Reset time selection when date changes
+  };
+
+  const handleTimeSelect = (time: string) => {
+    setSelectedTime(time);
+  };
+
+  const handleBookSession = () => {
+    const dateStr = format(selectedDate, 'EEEE, MMMM d');
+    alert(`Session booked for ${dateStr} at ${selectedTime}!\n\nYou'll receive a reminder before your session.`);
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -20,120 +49,21 @@ const PlanPage: React.FC = () => {
           Plan Your Session
         </h1>
         <p className="text-muted-foreground">
-          Find the best surf windows based on your availability and skill level
+          Select a date and time to book your surf session
         </p>
       </div>
 
-      {/* Time Selector */}
-      <Card className="mb-6 shadow-float">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            When are you free to surf?
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Button variant="outline" className="justify-start">
-              <Clock className="h-4 w-4 mr-2" />
-              6-8am
-            </Button>
-            <Button variant="default" className="justify-start">
-              <Clock className="h-4 w-4 mr-2" />
-              8-10am
-            </Button>
-            <Button variant="outline" className="justify-start">
-              <Clock className="h-4 w-4 mr-2" />
-              12-2pm
-            </Button>
-            <Button variant="outline" className="justify-start">
-              <Clock className="h-4 w-4 mr-2" />
-              2-4pm
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Window Results */}
-      <div className="space-y-6">
-        {timeWindows.map((window, index) => (
-          <Card key={index} className="shadow-float">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-accent" />
-                  {window.time}
-                </CardTitle>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-foreground">{window.bestScore}</div>
-                  <Badge variant={
-                    window.bestScore >= 80 ? 'success' :
-                    window.bestScore >= 60 ? 'accent' :
-                    window.bestScore >= 40 ? 'warning' : 'destructive'
-                  }>
-                    {window.bestScore >= 80 ? 'Safe' :
-                     window.bestScore >= 60 ? 'Good' :
-                     window.bestScore >= 40 ? 'Stretch' : 'No-Go'}
-                  </Badge>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide mb-2">
-                    Best Spots
-                  </h4>
-                  <div className="space-y-1">
-                    {window.spots.map((spot, spotIndex) => (
-                      <div key={spotIndex} className="flex items-center gap-2">
-                        <MapPin className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-sm">{spot}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide mb-2">
-                    Conditions
-                  </h4>
-                  <div className="flex items-center gap-2">
-                    <Waves className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-sm">{window.conditions}</span>
-                  </div>
-                </div>
-                
-                <div className="flex items-end">
-                  <Button size="sm" className="w-full">
-                    Plan Session
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Trending */}
-      <Card className="mt-8 shadow-float bg-gradient-to-r from-primary/5 to-accent/5">
+      {/* Weekly Outlook - Now at the top */}
+      <Card className="mb-6 shadow-float bg-gradient-to-r from-primary/5 to-accent/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-primary" />
-            This Week's Outlook
+            This Week's Forecast - Select Your Day
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-            {[
-              { score: 75, conditions: '2ft Clean', quality: 'Good' },
-              { score: 85, conditions: '3ft Offshore', quality: 'Excellent' },
-              { score: 45, conditions: '2ft Onshore', quality: 'Fair' },
-              { score: 65, conditions: '2-3ft Cross', quality: 'Good' },
-              { score: 30, conditions: '1ft Messy', quality: 'Poor' },
-              { score: 70, conditions: '2ft Clean', quality: 'Good' },
-              { score: 80, conditions: '3ft Glass', quality: 'Excellent' }
-            ].map((day, index) => {
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+            {weeklyForecast.map((day, index) => {
               const date = addDays(new Date(), index);
               const dayName = isToday(date) 
                 ? 'Today' 
@@ -141,28 +71,38 @@ const PlanPage: React.FC = () => {
                   ? 'Tomorrow' 
                   : format(date, 'EEE');
               const dateStr = format(date, 'MMM d');
+              const isSelected = format(selectedDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
               
               return (
-                <div key={index} className="text-center p-3 bg-background/50 rounded-lg">
+                <button
+                  key={index}
+                  onClick={() => handleDateSelect(date)}
+                  className={`text-center p-4 rounded-lg transition-all hover:scale-105 cursor-pointer ${
+                    isSelected 
+                      ? 'bg-primary text-primary-foreground shadow-lg ring-2 ring-primary' 
+                      : 'bg-background/50 hover:bg-background'
+                  }`}
+                >
                   <div className="text-sm font-medium mb-1">{dayName}</div>
-                  <div className="text-xs text-muted-foreground mb-2">{dateStr}</div>
+                  <div className="text-xs mb-2 opacity-80">{dateStr}</div>
                   <div className={`text-2xl font-bold mb-1 ${
+                    isSelected ? '' :
                     day.score >= 80 ? 'text-success' :
                     day.score >= 60 ? 'text-accent' :
                     day.score >= 40 ? 'text-warning' : 'text-muted-foreground'
                   }`}>
                     {day.score}
                   </div>
-                  <div className="text-xs text-muted-foreground mb-1">{day.quality}</div>
-                  <div className="text-xs text-muted-foreground">{day.conditions}</div>
-                </div>
+                  <div className="text-xs opacity-80 mb-1">{day.quality}</div>
+                  <div className="text-xs opacity-70">{day.conditions}</div>
+                </button>
               );
             })}
           </div>
           <div className="mt-4 pt-4 border-t text-center">
             <p className="text-sm text-muted-foreground">
               {(() => {
-                const bestDayIndex = [75, 85, 45, 65, 30, 70, 80].indexOf(85);
+                const bestDayIndex = weeklyForecast.findIndex(d => d.score === Math.max(...weeklyForecast.map(day => day.score)));
                 const bestDate = addDays(new Date(), bestDayIndex);
                 const bestDayName = isToday(bestDate) 
                   ? 'Today' 
@@ -175,6 +115,120 @@ const PlanPage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Selected Date Display */}
+      <Card className="mb-6 shadow-float">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-accent" />
+            {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Select your preferred time slot below to book your surf session
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Time Window Selection */}
+      <Card className="mb-6 shadow-float">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Available Time Slots
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {timeWindows.map((window, index) => {
+              const isSelected = selectedTime === window.time;
+              return (
+                <button
+                  key={index}
+                  onClick={() => handleTimeSelect(window.time)}
+                  className={`w-full text-left p-4 rounded-lg border-2 transition-all hover:shadow-md ${
+                    isSelected 
+                      ? 'border-primary bg-primary/5' 
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <Clock className="h-5 w-5 text-accent" />
+                      <div>
+                        <div className="font-semibold">{window.label}</div>
+                        <div className="text-sm text-muted-foreground">{window.time}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-foreground">{window.bestScore}</div>
+                      <Badge variant={
+                        window.bestScore >= 80 ? 'success' :
+                        window.bestScore >= 60 ? 'accent' :
+                        window.bestScore >= 40 ? 'warning' : 'destructive'
+                      }>
+                        {window.bestScore >= 80 ? 'Safe' :
+                         window.bestScore >= 60 ? 'Good' :
+                         window.bestScore >= 40 ? 'Stretch' : 'No-Go'}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 pt-3 border-t">
+                    <div>
+                      <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                        Best Spots
+                      </h4>
+                      <div className="flex flex-wrap gap-1">
+                        {window.spots.map((spot, spotIndex) => (
+                          <Badge key={spotIndex} variant="secondary" className="text-xs">
+                            {spot}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                        Conditions
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        <Waves className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-sm">{window.conditions}</span>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Book Session Button */}
+      {selectedTime && (
+        <Card className="mb-6 shadow-float bg-gradient-to-r from-success/10 to-accent/10 border-success/20">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold mb-1">Ready to book your session?</h3>
+                <p className="text-sm text-muted-foreground">
+                  {format(selectedDate, 'EEEE, MMMM d')} at {selectedTime}
+                </p>
+              </div>
+              <Button 
+                size="lg" 
+                onClick={handleBookSession}
+                className="w-full md:w-auto"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Book This Session
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Safety Footer */}
       <div className="mt-12 p-4 bg-warning/10 border border-warning/30 rounded-lg">
