@@ -29,6 +29,7 @@ const PlanPage: React.FC = () => {
   const [isBooking, setIsBooking] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [expandedTimeSlot, setExpandedTimeSlot] = useState<string | null>(null);
+  const [showSkillComparison, setShowSkillComparison] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -188,20 +189,19 @@ const PlanPage: React.FC = () => {
       .map(({ spot }) => spot);
   };
 
+  const skillLevelThresholds = {
+    beginner: { safe: 50, good: 40, stretch: 30 },
+    intermediate: { safe: 65, good: 55, stretch: 45 },
+    advanced: { safe: 75, good: 65, stretch: 55 },
+    expert: { safe: 80, good: 70, stretch: 60 }
+  };
+
   const getRecommendationForSpot = (spotScore: number, skillLevel: string | null) => {
     if (!skillLevel) {
       return { text: 'Set your skill level in profile for personalized recommendations', color: 'text-muted-foreground' };
     }
 
-    // Adjust recommendations based on skill level
-    const thresholds = {
-      beginner: { safe: 50, good: 40, stretch: 30 },
-      intermediate: { safe: 65, good: 55, stretch: 45 },
-      advanced: { safe: 75, good: 65, stretch: 55 },
-      expert: { safe: 80, good: 70, stretch: 60 }
-    };
-
-    const level = thresholds[skillLevel as keyof typeof thresholds] || thresholds.intermediate;
+    const level = skillLevelThresholds[skillLevel as keyof typeof skillLevelThresholds] || skillLevelThresholds.intermediate;
 
     if (spotScore >= level.safe) {
       return { 
@@ -227,6 +227,20 @@ const PlanPage: React.FC = () => {
         color: 'text-destructive',
         icon: '×'
       };
+    }
+  };
+
+  const getRecommendationForSkillLevel = (spotScore: number, skillLevel: string) => {
+    const level = skillLevelThresholds[skillLevel as keyof typeof skillLevelThresholds];
+    
+    if (spotScore >= level.safe) {
+      return { rating: 'Perfect', color: 'text-success', bgColor: 'bg-success/10', badge: 'success' };
+    } else if (spotScore >= level.good) {
+      return { rating: 'Good', color: 'text-accent', bgColor: 'bg-accent/10', badge: 'accent' };
+    } else if (spotScore >= level.stretch) {
+      return { rating: 'Stretch', color: 'text-warning', bgColor: 'bg-warning/10', badge: 'warning' };
+    } else {
+      return { rating: 'Not Safe', color: 'text-destructive', bgColor: 'bg-destructive/10', badge: 'destructive' };
     }
   };
 
@@ -462,17 +476,153 @@ const PlanPage: React.FC = () => {
       {/* Selected Date Display */}
       <Card className="mb-6 shadow-float">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-accent" />
-            {format(selectedDate, 'EEEE, MMMM d, yyyy')}
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-accent" />
+              {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSkillComparison(!showSkillComparison)}
+            >
+              <TrendingUp className="h-4 w-4 mr-2" />
+              {showSkillComparison ? 'Hide' : 'Show'} Skill Comparison
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Select your preferred time slot below to book your surf session
+            {showSkillComparison 
+              ? 'View how different skill levels rate the same conditions to understand your progression path'
+              : 'Select your preferred time slot below to book your surf session'}
           </p>
         </CardContent>
       </Card>
+
+      {/* Skill Level Comparison View */}
+      {showSkillComparison && selectedSpots.length > 0 && (
+        <Card className="mb-6 shadow-float bg-gradient-to-r from-primary/5 to-accent/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Skill Level Progression Comparison
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-6">
+              See how the same conditions are rated across all skill levels. This helps you understand what conditions you will be comfortable with as you progress.
+            </p>
+            
+            <div className="space-y-6">
+              {timeWindows.map((window) => {
+                const score = getTimeWindowScore(window);
+                
+                return (
+                  <div key={window.time} className="border rounded-lg p-4 bg-background">
+                    <div className="flex items-center justify-between mb-4 pb-3 border-b">
+                      <div>
+                        <h3 className="font-semibold text-lg">{window.label}</h3>
+                        <p className="text-sm text-muted-foreground">{window.time}</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold">{score}</div>
+                        <p className="text-xs text-muted-foreground">Average Score</p>
+                      </div>
+                    </div>
+
+                    {/* Comparison Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                      {(['beginner', 'intermediate', 'advanced', 'expert'] as const).map((level) => {
+                        const spotRatings = selectedSpots.map(spot => {
+                          const spotScore = window.spotScores[spot] || 0;
+                          return getRecommendationForSkillLevel(spotScore, level);
+                        });
+                        
+                        // Calculate average rating for this skill level
+                        const avgRating = spotRatings.filter(r => r.rating === 'Perfect').length / spotRatings.length;
+                        const isCurrentLevel = userProfile?.skill_level === level;
+                        
+                        return (
+                          <div 
+                            key={level}
+                            className={`p-3 rounded-lg border-2 transition-all ${
+                              isCurrentLevel 
+                                ? 'border-primary bg-primary/10 ring-2 ring-primary/20' 
+                                : 'border-border'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-semibold capitalize text-sm">
+                                {level}
+                                {isCurrentLevel && (
+                                  <Badge variant="default" className="ml-2 text-xs">You</Badge>
+                                )}
+                              </h4>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              {selectedSpots.map((spot, idx) => {
+                                const spotScore = window.spotScores[spot] || 0;
+                                const rec = getRecommendationForSkillLevel(spotScore, level);
+                                
+                                return (
+                                  <div 
+                                    key={spot}
+                                    className={`text-xs p-2 rounded ${rec.bgColor}`}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-medium truncate">{spot}</span>
+                                      <Badge 
+                                        variant={rec.badge as any}
+                                        className="text-xs ml-1"
+                                      >
+                                        {rec.rating}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            
+                            <div className="mt-3 pt-2 border-t">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-muted-foreground">Overall:</span>
+                                <span className="font-semibold">
+                                  {avgRating >= 0.7 ? '🟢 Great' :
+                                   avgRating >= 0.4 ? '🟡 Decent' :
+                                   avgRating >= 0.2 ? '🟠 Challenging' : '🔴 Risky'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Progression Insight */}
+                    {userProfile?.skill_level && (
+                      <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                        <p className="text-sm">
+                          <strong>💡 Progression Tip:</strong> {
+                            userProfile.skill_level === 'beginner' 
+                              ? 'Focus on spots rated "Perfect" for beginners. As you gain confidence, spots rated "Good" for intermediates will become your next challenge.'
+                              : userProfile.skill_level === 'intermediate'
+                              ? 'You can handle most beginner-friendly conditions. Start exploring spots rated "Good" or "Perfect" for advanced surfers to push your skills.'
+                              : userProfile.skill_level === 'advanced'
+                              ? 'You have solid skills! Challenge yourself with expert-rated spots on good days, but always respect the ocean.'
+                              : 'As an expert, you can handle most conditions, but always assess risk and never surf alone in challenging spots.'
+                          }
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Time Window Selection */}
       <Card className="mb-6 shadow-float">
