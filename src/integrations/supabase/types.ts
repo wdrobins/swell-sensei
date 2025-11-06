@@ -38,6 +38,75 @@ export type Database = {
         }
         Relationships: []
       }
+      goals: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_progress: number | null
+          goal_type: string
+          id: string
+          status: string
+          target_progress: number
+          target_value: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_progress?: number | null
+          goal_type: string
+          id?: string
+          status?: string
+          target_progress: number
+          target_value: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_progress?: number | null
+          goal_type?: string
+          id?: string
+          status?: string
+          target_progress?: number
+          target_value?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      milestones: {
+        Row: {
+          badge_name: string
+          badge_type: string
+          description: string | null
+          earned_at: string
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          badge_name: string
+          badge_type: string
+          description?: string | null
+          earned_at?: string
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          badge_name?: string
+          badge_type?: string
+          description?: string | null
+          earned_at?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -100,6 +169,30 @@ export type Database = {
           spot_preferences?: Json | null
           title?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      skill_history: {
+        Row: {
+          id: string
+          notes: string | null
+          recorded_at: string
+          skill_level: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          notes?: string | null
+          recorded_at?: string
+          skill_level: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          notes?: string | null
+          recorded_at?: string
+          skill_level?: string
           user_id?: string
         }
         Relationships: []

@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   User, Waves, Target, MapPin, TrendingUp, 
   Calendar, Award, Settings, Edit, Save
@@ -14,6 +15,9 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import GoalsTracker from '@/components/GoalsTracker';
+import SkillProgressionChart from '@/components/SkillProgressionChart';
+import MilestoneBadges from '@/components/MilestoneBadges';
 
 const ProfilePage: React.FC = () => {
   const { user } = useAuth();
@@ -57,6 +61,10 @@ const ProfilePage: React.FC = () => {
     
     setIsSaving(true);
     
+    // Check if skill level changed
+    const skillLevelChanged = profile.skill_level !== editForm.skill_level;
+    const oldSkillLevel = profile.skill_level;
+    
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -74,9 +82,33 @@ const ProfilePage: React.FC = () => {
         variant: "destructive"
       });
     } else {
+      // If skill level changed, record it in skill history
+      if (skillLevelChanged && editForm.skill_level) {
+        await supabase
+          .from('skill_history')
+          .insert({
+            user_id: user.id,
+            skill_level: editForm.skill_level,
+            notes: oldSkillLevel ? `Advanced from ${oldSkillLevel} to ${editForm.skill_level}` : `Set initial skill level to ${editForm.skill_level}`
+          });
+        
+        // Award milestone for skill advancement
+        if (oldSkillLevel) {
+          await supabase
+            .from('milestones')
+            .insert({
+              user_id: user.id,
+              badge_type: 'skill_advancement',
+              badge_name: 'Level Up!',
+              description: `Advanced from ${oldSkillLevel} to ${editForm.skill_level}`,
+              metadata: { from: oldSkillLevel, to: editForm.skill_level }
+            });
+        }
+      }
+      
       toast({
         title: "Success",
-        description: "Your profile has been updated!",
+        description: skillLevelChanged ? "Profile updated and progress recorded!" : "Your profile has been updated!",
       });
       setIsEditing(false);
       fetchProfile();
@@ -135,9 +167,20 @@ const ProfilePage: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Basic Info & Skill Level */}
-        <div className="lg:col-span-2 space-y-6">
+      {/* Tabbed Interface */}
+      <Tabs defaultValue="profile" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="progression">Progression</TabsTrigger>
+          <TabsTrigger value="goals">Goals</TabsTrigger>
+          <TabsTrigger value="badges">Badges</TabsTrigger>
+        </TabsList>
+
+        {/* Profile Tab */}
+        <TabsContent value="profile">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Basic Info & Skill Level */}
+            <div className="lg:col-span-2 space-y-6">
           <Card className="shadow-float">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -231,85 +274,109 @@ const ProfilePage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Skill Assessment - Placeholder for future features */}
-          <Card className="shadow-float">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Waves className="h-5 w-5 text-accent" />
-                Additional Skills (Coming Soon)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                More detailed skill assessments and tracking features coming soon!
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+              {/* Skill Assessment - Placeholder for future features */}
+              <Card className="shadow-float">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Waves className="h-5 w-5 text-accent" />
+                    Additional Skills (Coming Soon)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    More detailed skill assessments and tracking features coming soon!
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Quick Stats */}
-          <Card className="shadow-float bg-gradient-to-br from-primary/5 to-accent/5">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                Profile Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-foreground">
-                  {profile.skill_level ? '✓' : '○'}
-                </div>
-                <div className="text-sm text-muted-foreground">Skill Level Set</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-accent">
-                  {profile.experience_years || 0}
-                </div>
-                <div className="text-sm text-muted-foreground">Years Experience</div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm font-medium text-success">
-                  {profile.preferred_wave_size || 'Not set'}
-                </div>
-                <div className="text-sm text-muted-foreground">Preferred Wave Size</div>
-              </div>
-            </CardContent>
-          </Card>
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Quick Stats */}
+              <Card className="shadow-float bg-gradient-to-br from-primary/5 to-accent/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    Profile Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-foreground">
+                      {profile.skill_level ? '✓' : '○'}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Skill Level Set</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-accent">
+                      {profile.experience_years || 0}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Years Experience</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-success">
+                      {profile.preferred_wave_size || 'Not set'}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Preferred Wave Size</div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Quick Actions */}
-          <Card className="shadow-float">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5 text-muted-foreground" />
-                Quick Actions
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button asChild variant="outline" size="sm" className="w-full justify-start">
-                <Link to="/plan">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Plan a Session
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="sm" className="w-full justify-start">
-                <Link to="/spots">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  Browse Surf Spots
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="sm" className="w-full justify-start">
-                <Link to="/logs">
-                  <Waves className="h-4 w-4 mr-2" />
-                  View Session Logs
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              {/* Quick Actions */}
+              <Card className="shadow-float">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-muted-foreground" />
+                    Quick Actions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Button asChild variant="outline" size="sm" className="w-full justify-start">
+                    <Link to="/plan">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Plan a Session
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" size="sm" className="w-full justify-start">
+                    <Link to="/spots">
+                      <MapPin className="h-4 w-4 mr-2" />
+                      Browse Surf Spots
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" size="sm" className="w-full justify-start">
+                    <Link to="/logs">
+                      <Waves className="h-4 w-4 mr-2" />
+                      View Session Logs
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Progression Tab */}
+        <TabsContent value="progression">
+          <div className="grid grid-cols-1 gap-6">
+            <SkillProgressionChart />
+          </div>
+        </TabsContent>
+
+        {/* Goals Tab */}
+        <TabsContent value="goals">
+          <div className="grid grid-cols-1 gap-6">
+            <GoalsTracker />
+          </div>
+        </TabsContent>
+
+        {/* Badges Tab */}
+        <TabsContent value="badges">
+          <div className="grid grid-cols-1 gap-6">
+            <MilestoneBadges />
+          </div>
+        </TabsContent>
+      </Tabs>
+
 
       {/* Safety Footer */}
       <div className="mt-12 p-4 bg-warning/10 border border-warning/30 rounded-lg">

@@ -21,6 +21,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { checkAndAwardMilestones } from '@/lib/milestoneUtils';
 
 const PlanPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -341,10 +342,32 @@ const PlanPage: React.FC = () => {
         description: `Your surf session for ${dateStr} at ${selectedTime} has been saved.`,
       });
 
+      // Check for milestones
+      const { data: allSessions } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (allSessions) {
+        const result = await checkAndAwardMilestones({
+          userId: user.id,
+          sessions: allSessions
+        });
+
+        if (result.awarded && result.awarded.length > 0) {
+          setTimeout(() => {
+            toast({
+              title: "🎉 New Badge Earned!",
+              description: `You earned: ${result.awarded.map(m => m.badge_name).join(', ')}`,
+            });
+          }, 1000);
+        }
+      }
+
       // Navigate to logs page after short delay
       setTimeout(() => {
         navigate('/logs');
-      }, 1500);
+      }, 2000);
 
     } catch (error) {
       console.error('Error booking session:', error);
