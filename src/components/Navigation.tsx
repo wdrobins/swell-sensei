@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Waves, MapPin, Calendar, BookOpen, Settings, User, LogOut, LogIn } from 'lucide-react';
+import { Waves, MapPin, Calendar, BookOpen, Settings, User, LogOut, LogIn, BarChart3, Trophy } from 'lucide-react';
 
 const Navigation: React.FC = () => {
   const location = useLocation();
@@ -14,6 +14,8 @@ const Navigation: React.FC = () => {
     { href: '/spots', label: 'Spots', icon: MapPin },
     { href: '/plan', label: 'Plan Session', icon: Calendar },
     { href: '/logs', label: 'Session Log', icon: BookOpen },
+    { href: '/analytics', label: 'Analytics', icon: BarChart3 },
+    { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
     { href: '/profile', label: 'Profile', icon: User },
   ];
 

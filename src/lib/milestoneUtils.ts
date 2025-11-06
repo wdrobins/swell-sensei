@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 export interface MilestoneCheck {
   userId: string;
@@ -104,8 +105,17 @@ export const checkAndAwardMilestones = async ({ userId, sessions, goals }: Miles
 
       if (error) {
         console.error('Error awarding milestones:', error);
-        return { success: false, awarded: [] };
+      return { success: false, awarded: [] };
       }
+
+      // Show toast notifications for newly awarded milestones
+      milestones.forEach(milestone => {
+        toast({
+          title: '🏆 New Badge Earned!',
+          description: `${milestone.badge_name}: ${milestone.description}`,
+          duration: 5000,
+        });
+      });
 
       return { success: true, awarded: milestones };
     }
@@ -154,6 +164,13 @@ export const awardMilestone = async (
       console.error('Error awarding milestone:', error);
       return { success: false, message: error.message };
     }
+
+    // Show toast notification for the awarded milestone
+    toast({
+      title: '🏆 New Badge Earned!',
+      description: `${badgeName}: ${description}`,
+      duration: 5000,
+    });
 
     return { success: true, message: 'Milestone awarded!' };
   } catch (error) {

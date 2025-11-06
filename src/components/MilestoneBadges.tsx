@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Award, Trophy, Star, Waves, Target, Calendar, MapPin, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Award, Trophy, Star, Waves, Target, Calendar, MapPin, TrendingUp, Share2, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
 
 interface Milestone {
   id: string;
@@ -18,6 +20,7 @@ interface Milestone {
 const MilestoneBadges: React.FC = () => {
   const { user } = useAuth();
   const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMilestones();
@@ -36,6 +39,49 @@ const MilestoneBadges: React.FC = () => {
       console.error('Error fetching milestones:', error);
     } else {
       setMilestones(data || []);
+    }
+  };
+
+  const handleShare = async (milestone: Milestone) => {
+    const shareText = `🏆 I just earned the "${milestone.badge_name}" badge! ${milestone.description}`;
+    const shareUrl = window.location.origin;
+
+    // Try native share API first
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Achievement Unlocked!',
+          text: shareText,
+          url: shareUrl,
+        });
+        toast({
+          title: 'Shared successfully!',
+          description: 'Your achievement has been shared.',
+        });
+      } catch (error) {
+        // User cancelled or error occurred
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Share error:', error);
+        }
+      }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+        setCopiedId(milestone.id);
+        toast({
+          title: 'Copied to clipboard!',
+          description: 'Share your achievement anywhere.',
+        });
+        setTimeout(() => setCopiedId(null), 2000);
+      } catch (error) {
+        console.error('Copy error:', error);
+        toast({
+          title: 'Could not copy',
+          description: 'Please try again.',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
@@ -95,7 +141,7 @@ const MilestoneBadges: React.FC = () => {
               {milestones.map((milestone) => (
                 <div
                   key={milestone.id}
-                  className="relative group cursor-pointer"
+                  className="relative group"
                 >
                   <div className={`p-4 rounded-lg bg-gradient-to-br ${getBadgeColor(milestone.badge_type)} text-white shadow-lg transform transition-transform hover:scale-105`}>
                     <div className="flex flex-col items-center text-center">
@@ -110,9 +156,21 @@ const MilestoneBadges: React.FC = () => {
                         {format(new Date(milestone.earned_at), 'MMM d, yyyy')}
                       </p>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 h-6 w-6 bg-white/20 hover:bg-white/30"
+                      onClick={() => handleShare(milestone)}
+                    >
+                      {copiedId === milestone.id ? (
+                        <Check className="h-3 w-3" />
+                      ) : (
+                        <Share2 className="h-3 w-3" />
+                      )}
+                    </Button>
                   </div>
                   {/* Shine effect */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg" />
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg pointer-events-none" />
                 </div>
               ))}
             </div>
