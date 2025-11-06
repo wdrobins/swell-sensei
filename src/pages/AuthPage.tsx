@@ -85,6 +85,21 @@ const AuthPage = () => {
     }
 
     setLoading(true);
+    
+    // Check if we have an active session first
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      setLoading(false);
+      toast({
+        title: "Session expired",
+        description: "Your password reset link has expired. Please request a new one.",
+        variant: "destructive",
+      });
+      navigate('/auth');
+      return;
+    }
+
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setLoading(false);
 
@@ -129,17 +144,22 @@ const AuthPage = () => {
                   <Input
                     id="new-password"
                     type="password"
+                    placeholder="Minimum 6 characters"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
                     minLength={6}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Password must be at least 6 characters long
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirm-password">Confirm Password</Label>
                   <Input
                     id="confirm-password"
                     type="password"
+                    placeholder="Re-enter your password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
