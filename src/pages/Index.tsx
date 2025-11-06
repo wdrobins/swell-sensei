@@ -12,6 +12,7 @@ import {
   CheckCircle2, AlertTriangle 
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { addDays, format } from 'date-fns';
 
 const Index = () => {
   // Calculate fit scores for favorite spots
@@ -146,22 +147,29 @@ const Index = () => {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
                 {[
-                  { day: 'Today', score: 75, conditions: '2ft Clean', color: 'accent' },
-                  { day: 'Tue', score: 85, conditions: '3ft Offshore', color: 'success' },
-                  { day: 'Wed', score: 45, conditions: '2ft Onshore', color: 'warning' },
-                  { day: 'Thu', score: 65, conditions: '2-3ft Cross', color: 'accent' },
-                  { day: 'Fri', score: 30, conditions: '1ft Messy', color: 'destructive' },
-                  { day: 'Sat', score: 70, conditions: '2ft Clean', color: 'accent' },
-                  { day: 'Sun', score: 80, conditions: '3ft Glass', color: 'success' }
-                ].map((forecast, index) => (
-                  <Card key={index} className="text-center p-3">
-                    <div className="text-sm font-medium mb-1">{forecast.day}</div>
-                    <div className="text-2xl font-bold mb-1">{forecast.score}</div>
-                    <Badge variant={forecast.color as any} className="text-xs">
-                      {forecast.conditions}
-                    </Badge>
-                  </Card>
-                ))}
+                  { score: 75, conditions: '2ft Clean', color: 'accent' },
+                  { score: 85, conditions: '3ft Offshore', color: 'success' },
+                  { score: 45, conditions: '2ft Onshore', color: 'warning' },
+                  { score: 65, conditions: '2-3ft Cross', color: 'accent' },
+                  { score: 30, conditions: '1ft Messy', color: 'destructive' },
+                  { score: 70, conditions: '2ft Clean', color: 'accent' },
+                  { score: 80, conditions: '3ft Glass', color: 'success' }
+                ].map((forecast, index) => {
+                  const date = addDays(new Date(), index);
+                  const dayLabel = index === 0 ? 'Today' : format(date, 'EEE');
+                  const dateLabel = format(date, 'MMM d');
+                  
+                  return (
+                    <Card key={index} className="text-center p-3">
+                      <div className="text-sm font-medium mb-1">{dayLabel}</div>
+                      <div className="text-xs text-muted-foreground mb-1">{dateLabel}</div>
+                      <div className="text-2xl font-bold mb-1">{forecast.score}</div>
+                      <Badge variant={forecast.color as any} className="text-xs">
+                        {forecast.conditions}
+                      </Badge>
+                    </Card>
+                  );
+                })}
               </div>
               
               <div className="mt-4 pt-4 border-t">
