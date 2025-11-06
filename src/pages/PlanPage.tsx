@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, MapPin, Waves, TrendingUp, UserPlus, Share2 } from 'lucide-react';
+import { Calendar, Clock, MapPin, Waves, TrendingUp, UserPlus, Share2, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { addDays, format, isToday, isTomorrow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,6 +16,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const PlanPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -23,6 +28,8 @@ const PlanPage: React.FC = () => {
   const [selectedSpots, setSelectedSpots] = useState<string[]>([]);
   const [isBooking, setIsBooking] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [expandedTimeSlot, setExpandedTimeSlot] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -38,6 +45,27 @@ const PlanPage: React.FC = () => {
     'Point Addis',
     'Winki Pop'
   ];
+
+  // Fetch user profile with skill level
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('skill_level, experience_years, preferred_wave_size')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching profile:', error);
+      } else {
+        setUserProfile(data);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
 
   const weeklyForecast = [
     { score: 75, conditions: '2ft Clean', quality: 'Good' },
@@ -158,6 +186,52 @@ const PlanPage: React.FC = () => {
       .map(spot => ({ spot, score: window.spotScores[spot] || 0 }))
       .sort((a, b) => b.score - a.score)
       .map(({ spot }) => spot);
+  };
+
+  const getRecommendationForSpot = (spotScore: number, skillLevel: string | null) => {
+    if (!skillLevel) {
+      return { text: 'Set your skill level in profile for personalized recommendations', color: 'text-muted-foreground' };
+    }
+
+    // Adjust recommendations based on skill level
+    const thresholds = {
+      beginner: { safe: 50, good: 40, stretch: 30 },
+      intermediate: { safe: 65, good: 55, stretch: 45 },
+      advanced: { safe: 75, good: 65, stretch: 55 },
+      expert: { safe: 80, good: 70, stretch: 60 }
+    };
+
+    const level = thresholds[skillLevel as keyof typeof thresholds] || thresholds.intermediate;
+
+    if (spotScore >= level.safe) {
+      return { 
+        text: `Perfect for your ${skillLevel} level! Go for it!`, 
+        color: 'text-success',
+        icon: '✓'
+      };
+    } else if (spotScore >= level.good) {
+      return { 
+        text: `Good conditions for your skill level`, 
+        color: 'text-accent',
+        icon: '→'
+      };
+    } else if (spotScore >= level.stretch) {
+      return { 
+        text: `Challenging - push your limits carefully`, 
+        color: 'text-warning',
+        icon: '!'
+      };
+    } else {
+      return { 
+        text: `Not recommended for ${skillLevel}s today`, 
+        color: 'text-destructive',
+        icon: '×'
+      };
+    }
+  };
+
+  const toggleTimeSlot = (timeSlot: string) => {
+    setExpandedTimeSlot(expandedTimeSlot === timeSlot ? null : timeSlot);
   };
 
   const handleDateSelect = (date: Date) => {
@@ -412,66 +486,144 @@ const PlanPage: React.FC = () => {
           <div className="space-y-3">
             {timeWindows.map((window, index) => {
               const isSelected = selectedTime === window.time;
+              const isExpanded = expandedTimeSlot === window.time;
               const score = getTimeWindowScore(window);
               const bestSpots = getBestSpotsForWindow(window);
               
               return (
-                <button
+                <Collapsible
                   key={index}
-                  onClick={() => handleTimeSelect(window.time)}
-                  className={`w-full text-left p-4 rounded-lg border-2 transition-all hover:shadow-md ${
-                    isSelected 
-                      ? 'border-primary bg-primary/5' 
-                      : 'border-border hover:border-primary/50'
-                  }`}
+                  open={isExpanded}
+                  onOpenChange={() => toggleTimeSlot(window.time)}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <Clock className="h-5 w-5 text-accent" />
-                      <div>
-                        <div className="font-semibold">{window.label}</div>
-                        <div className="text-sm text-muted-foreground">{window.time}</div>
+                  <div
+                    className={`w-full rounded-lg border-2 transition-all ${
+                      isSelected 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <Clock className="h-5 w-5 text-accent" />
+                          <div>
+                            <div className="font-semibold">{window.label}</div>
+                            <div className="text-sm text-muted-foreground">{window.time}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-foreground">{score}</div>
+                            <Badge variant={
+                              score >= 80 ? 'success' :
+                              score >= 60 ? 'accent' :
+                              score >= 40 ? 'warning' : 'destructive'
+                            }>
+                              {score >= 80 ? 'Safe' :
+                               score >= 60 ? 'Good' :
+                               score >= 40 ? 'Stretch' : 'No-Go'}
+                            </Badge>
+                          </div>
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </Button>
+                          </CollapsibleTrigger>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 pt-3 border-t">
+                        <div>
+                          <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                            {selectedSpots.length > 0 ? 'Your Spots' : 'Best Spots'}
+                          </h4>
+                          <div className="flex flex-wrap gap-1">
+                            {bestSpots.map((spot, spotIndex) => (
+                              <Badge key={spotIndex} variant="secondary" className="text-xs">
+                                {spot}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                            Conditions
+                          </h4>
+                          <div className="flex items-center gap-2">
+                            <Waves className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-sm">{window.conditions}</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-foreground">{score}</div>
-                      <Badge variant={
-                        score >= 80 ? 'success' :
-                        score >= 60 ? 'accent' :
-                        score >= 40 ? 'warning' : 'destructive'
-                      }>
-                        {score >= 80 ? 'Safe' :
-                         score >= 60 ? 'Good' :
-                         score >= 40 ? 'Stretch' : 'No-Go'}
-                      </Badge>
-                    </div>
+
+                    <CollapsibleContent>
+                      <div className="px-4 pb-4 border-t">
+                        <div className="pt-4 space-y-3">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Info className="h-4 w-4 text-primary" />
+                            <h4 className="font-semibold text-sm">
+                              Individual Spot Ratings {userProfile?.skill_level && `(${userProfile.skill_level})`}
+                            </h4>
+                          </div>
+                          
+                          {selectedSpots.length === 0 ? (
+                            <p className="text-sm text-muted-foreground italic">
+                              Select surf spots above to see personalized ratings and recommendations
+                            </p>
+                          ) : (
+                            <div className="space-y-2">
+                              {selectedSpots.map((spot) => {
+                                const spotScore = window.spotScores[spot] || 0;
+                                const recommendation = getRecommendationForSpot(spotScore, userProfile?.skill_level);
+                                
+                                return (
+                                  <div key={spot} className="p-3 rounded-lg bg-background border">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex items-center gap-2">
+                                        <MapPin className="h-4 w-4 text-accent" />
+                                        <span className="font-medium">{spot}</span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-2xl font-bold">{spotScore}</span>
+                                        <Badge 
+                                          variant={
+                                            spotScore >= 80 ? 'success' :
+                                            spotScore >= 60 ? 'accent' :
+                                            spotScore >= 40 ? 'warning' : 'destructive'
+                                          }
+                                          className="text-xs"
+                                        >
+                                          {spotScore >= 80 ? 'Excellent' :
+                                           spotScore >= 60 ? 'Good' :
+                                           spotScore >= 40 ? 'Fair' : 'Poor'}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                    <div className={`text-sm flex items-center gap-2 ${recommendation.color}`}>
+                                      <span className="font-bold">{recommendation.icon}</span>
+                                      <span>{recommendation.text}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                          
+                          <Button
+                            onClick={() => handleTimeSelect(window.time)}
+                            className="w-full mt-3"
+                            variant={isSelected ? "default" : "outline"}
+                          >
+                            {isSelected ? 'Selected' : 'Select This Time'}
+                          </Button>
+                        </div>
+                      </div>
+                    </CollapsibleContent>
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 pt-3 border-t">
-                    <div>
-                      <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                        {selectedSpots.length > 0 ? 'Your Spots' : 'Best Spots'}
-                      </h4>
-                      <div className="flex flex-wrap gap-1">
-                        {bestSpots.map((spot, spotIndex) => (
-                          <Badge key={spotIndex} variant="secondary" className="text-xs">
-                            {spot}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                        Conditions
-                      </h4>
-                      <div className="flex items-center gap-2">
-                        <Waves className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-sm">{window.conditions}</span>
-                      </div>
-                    </div>
-                  </div>
-                </button>
+                </Collapsible>
               );
             })}
           </div>
