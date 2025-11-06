@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, MapPin, Waves, TrendingUp } from 'lucide-react';
+import { addDays, format, isToday, isTomorrow } from 'date-fns';
 
 const PlanPage: React.FC = () => {
   const timeWindows = [
@@ -123,22 +124,54 @@ const PlanPage: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-success">Tuesday</div>
-              <div className="text-sm text-muted-foreground">Best day this week</div>
-              <div className="text-xs text-muted-foreground mt-1">Clean 2-3ft SW swell</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-warning">Thursday</div>
-              <div className="text-sm text-muted-foreground">Moderate conditions</div>
-              <div className="text-xs text-muted-foreground mt-1">Onshore but surfable</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-muted-foreground">Weekend</div>
-              <div className="text-sm text-muted-foreground">Small waves</div>
-              <div className="text-xs text-muted-foreground mt-1">1-2ft, longboard waves</div>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+            {[
+              { score: 75, conditions: '2ft Clean', quality: 'Good' },
+              { score: 85, conditions: '3ft Offshore', quality: 'Excellent' },
+              { score: 45, conditions: '2ft Onshore', quality: 'Fair' },
+              { score: 65, conditions: '2-3ft Cross', quality: 'Good' },
+              { score: 30, conditions: '1ft Messy', quality: 'Poor' },
+              { score: 70, conditions: '2ft Clean', quality: 'Good' },
+              { score: 80, conditions: '3ft Glass', quality: 'Excellent' }
+            ].map((day, index) => {
+              const date = addDays(new Date(), index);
+              const dayName = isToday(date) 
+                ? 'Today' 
+                : isTomorrow(date) 
+                  ? 'Tomorrow' 
+                  : format(date, 'EEE');
+              const dateStr = format(date, 'MMM d');
+              
+              return (
+                <div key={index} className="text-center p-3 bg-background/50 rounded-lg">
+                  <div className="text-sm font-medium mb-1">{dayName}</div>
+                  <div className="text-xs text-muted-foreground mb-2">{dateStr}</div>
+                  <div className={`text-2xl font-bold mb-1 ${
+                    day.score >= 80 ? 'text-success' :
+                    day.score >= 60 ? 'text-accent' :
+                    day.score >= 40 ? 'text-warning' : 'text-muted-foreground'
+                  }`}>
+                    {day.score}
+                  </div>
+                  <div className="text-xs text-muted-foreground mb-1">{day.quality}</div>
+                  <div className="text-xs text-muted-foreground">{day.conditions}</div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-4 pt-4 border-t text-center">
+            <p className="text-sm text-muted-foreground">
+              {(() => {
+                const bestDayIndex = [75, 85, 45, 65, 30, 70, 80].indexOf(85);
+                const bestDate = addDays(new Date(), bestDayIndex);
+                const bestDayName = isToday(bestDate) 
+                  ? 'Today' 
+                  : isTomorrow(bestDate) 
+                    ? 'Tomorrow' 
+                    : format(bestDate, 'EEEE');
+                return `${bestDayName} looks like the best day this week! Plan ahead for optimal conditions.`;
+              })()}
+            </p>
           </div>
         </CardContent>
       </Card>
