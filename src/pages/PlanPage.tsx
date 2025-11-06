@@ -50,12 +50,115 @@ const PlanPage: React.FC = () => {
   ];
 
   const timeWindows = [
-    { time: '6-8am', label: 'Dawn', spots: ['Jan Juc', 'Bells Beach'], bestScore: 85, conditions: 'Light offshore winds' },
-    { time: '8-10am', label: 'Morning', spots: ['13th Beach', 'Jan Juc'], bestScore: 78, conditions: 'Clean conditions' },
-    { time: '12-2pm', label: 'Midday', spots: ['Torquay', 'Ocean Grove'], bestScore: 55, conditions: 'Moderate winds' },
-    { time: '2-4pm', label: 'Afternoon', spots: ['13th Beach'], bestScore: 62, conditions: 'Onshore building' },
-    { time: '4-6pm', label: 'Evening', spots: ['Fairhaven', 'Lorne'], bestScore: 68, conditions: 'Cross-shore winds' },
+    { 
+      time: '6-8am', 
+      label: 'Dawn', 
+      conditions: 'Light offshore winds',
+      spotScores: {
+        'Jan Juc': 85,
+        'Bells Beach': 82,
+        '13th Beach': 75,
+        'Torquay': 70,
+        'Ocean Grove': 65,
+        'Fairhaven': 60,
+        'Lorne': 58,
+        'Point Addis': 78,
+        'Winki Pop': 80
+      }
+    },
+    { 
+      time: '8-10am', 
+      label: 'Morning', 
+      conditions: 'Clean conditions',
+      spotScores: {
+        'Jan Juc': 78,
+        'Bells Beach': 76,
+        '13th Beach': 82,
+        'Torquay': 72,
+        'Ocean Grove': 68,
+        'Fairhaven': 65,
+        'Lorne': 62,
+        'Point Addis': 74,
+        'Winki Pop': 75
+      }
+    },
+    { 
+      time: '12-2pm', 
+      label: 'Midday', 
+      conditions: 'Moderate winds',
+      spotScores: {
+        'Jan Juc': 50,
+        'Bells Beach': 52,
+        '13th Beach': 48,
+        'Torquay': 58,
+        'Ocean Grove': 55,
+        'Fairhaven': 45,
+        'Lorne': 42,
+        'Point Addis': 48,
+        'Winki Pop': 50
+      }
+    },
+    { 
+      time: '2-4pm', 
+      label: 'Afternoon', 
+      conditions: 'Onshore building',
+      spotScores: {
+        'Jan Juc': 58,
+        'Bells Beach': 60,
+        '13th Beach': 65,
+        'Torquay': 55,
+        'Ocean Grove': 52,
+        'Fairhaven': 48,
+        'Lorne': 45,
+        'Point Addis': 62,
+        'Winki Pop': 58
+      }
+    },
+    { 
+      time: '4-6pm', 
+      label: 'Evening', 
+      conditions: 'Cross-shore winds',
+      spotScores: {
+        'Jan Juc': 62,
+        'Bells Beach': 65,
+        '13th Beach': 60,
+        'Torquay': 58,
+        'Ocean Grove': 55,
+        'Fairhaven': 70,
+        'Lorne': 68,
+        'Point Addis': 66,
+        'Winki Pop': 64
+      }
+    },
   ];
+
+  const getTimeWindowScore = (window: typeof timeWindows[0]) => {
+    if (selectedSpots.length === 0) {
+      // If no spots selected, show average of all spots
+      const scores = Object.values(window.spotScores);
+      return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    }
+    
+    // Calculate average score for selected spots
+    const selectedScores = selectedSpots.map(spot => window.spotScores[spot] || 0);
+    return Math.round(selectedScores.reduce((a, b) => a + b, 0) / selectedScores.length);
+  };
+
+  const getBestSpotsForWindow = (window: typeof timeWindows[0]) => {
+    if (selectedSpots.length === 0) {
+      // Show top 2 spots if no selection
+      return Object.entries(window.spotScores)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 2)
+        .map(([spot]) => spot);
+    }
+    
+    // Show selected spots sorted by score
+    return selectedSpots
+      .map(spot => ({ spot, score: window.spotScores[spot] || 0 }))
+      .sort((a, b) => b.score - a.score)
+      .map(({ spot }) => spot);
+  };
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
@@ -120,6 +223,8 @@ const PlanPage: React.FC = () => {
       // Find the selected time window details
       const selectedWindow = timeWindows.find(w => w.time === selectedTime);
       const dateStr = format(selectedDate, 'EEEE, MMMM d, yyyy');
+      const windowScore = selectedWindow ? getTimeWindowScore(selectedWindow) : 0;
+      const bestSpots = selectedWindow ? getBestSpotsForWindow(selectedWindow) : [];
       
       // Create session data
       const sessionData = {
@@ -130,9 +235,9 @@ const PlanPage: React.FC = () => {
           date: selectedDate.toISOString(),
           time: selectedTime,
           timeLabel: selectedWindow?.label,
-          spots: selectedWindow?.spots || [],
-          selectedSpots: selectedSpots.length > 0 ? selectedSpots : selectedWindow?.spots || [],
-          score: selectedWindow?.bestScore || 0,
+          spots: bestSpots,
+          selectedSpots: selectedSpots.length > 0 ? selectedSpots : bestSpots,
+          score: windowScore,
           conditions: selectedWindow?.conditions || ''
         }
       };
@@ -173,11 +278,51 @@ const PlanPage: React.FC = () => {
           Plan Your Session
         </h1>
         <p className="text-muted-foreground">
-          Select a date and time to book your surf session
+          Select your preferred surf spots, then choose a date and time
         </p>
       </div>
 
-      {/* Weekly Outlook - Now at the top */}
+      {/* Surf Spot Selection - Now at the top */}
+      <Card className="mb-6 shadow-float">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-accent" />
+            Select Your Preferred Surf Spots
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            Choose the surf spots you'd like to consider - time slot ratings will update based on your selection
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {allSurfSpots.map((spot) => (
+              <button
+                key={spot}
+                onClick={() => toggleSpot(spot)}
+                className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${
+                  selectedSpots.includes(spot)
+                    ? 'border-primary bg-primary/10 text-primary font-semibold'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  <span className="text-sm">{spot}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+          {selectedSpots.length > 0 && (
+            <div className="mt-4 p-3 bg-primary/5 rounded-lg">
+              <p className="text-sm font-medium">
+                Selected: {selectedSpots.join(', ')}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Weekly Outlook */}
       <Card className="mb-6 shadow-float bg-gradient-to-r from-primary/5 to-accent/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -267,6 +412,9 @@ const PlanPage: React.FC = () => {
           <div className="space-y-3">
             {timeWindows.map((window, index) => {
               const isSelected = selectedTime === window.time;
+              const score = getTimeWindowScore(window);
+              const bestSpots = getBestSpotsForWindow(window);
+              
               return (
                 <button
                   key={index}
@@ -286,15 +434,15 @@ const PlanPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-foreground">{window.bestScore}</div>
+                      <div className="text-2xl font-bold text-foreground">{score}</div>
                       <Badge variant={
-                        window.bestScore >= 80 ? 'success' :
-                        window.bestScore >= 60 ? 'accent' :
-                        window.bestScore >= 40 ? 'warning' : 'destructive'
+                        score >= 80 ? 'success' :
+                        score >= 60 ? 'accent' :
+                        score >= 40 ? 'warning' : 'destructive'
                       }>
-                        {window.bestScore >= 80 ? 'Safe' :
-                         window.bestScore >= 60 ? 'Good' :
-                         window.bestScore >= 40 ? 'Stretch' : 'No-Go'}
+                        {score >= 80 ? 'Safe' :
+                         score >= 60 ? 'Good' :
+                         score >= 40 ? 'Stretch' : 'No-Go'}
                       </Badge>
                     </div>
                   </div>
@@ -302,10 +450,10 @@ const PlanPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 pt-3 border-t">
                     <div>
                       <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                        Best Spots
+                        {selectedSpots.length > 0 ? 'Your Spots' : 'Best Spots'}
                       </h4>
                       <div className="flex flex-wrap gap-1">
-                        {window.spots.map((spot, spotIndex) => (
+                        {bestSpots.map((spot, spotIndex) => (
                           <Badge key={spotIndex} variant="secondary" className="text-xs">
                             {spot}
                           </Badge>
@@ -327,46 +475,6 @@ const PlanPage: React.FC = () => {
               );
             })}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Surf Spot Selection */}
-      <Card className="mb-6 shadow-float">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-accent" />
-            Select Your Preferred Surf Spots
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            Choose the surf spots you'd like to consider for your session
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {allSurfSpots.map((spot) => (
-              <button
-                key={spot}
-                onClick={() => toggleSpot(spot)}
-                className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${
-                  selectedSpots.includes(spot)
-                    ? 'border-primary bg-primary/10 text-primary font-semibold'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  <span className="text-sm">{spot}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-          {selectedSpots.length > 0 && (
-            <div className="mt-4 p-3 bg-primary/5 rounded-lg">
-              <p className="text-sm font-medium">
-                Selected: {selectedSpots.join(', ')}
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
 
