@@ -26,13 +26,25 @@ const AuthPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const isResettingPassword = searchParams.get('reset') === 'true';
+  
+  // Check for password reset from email link (Supabase uses hash fragments)
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    // Check if this is a password recovery flow
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const type = hashParams.get('type');
+    
+    if (type === 'recovery') {
+      setIsResettingPassword(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user && !isResettingPassword) {
       navigate('/');
     }
-  }, [user, navigate]);
+  }, [user, isResettingPassword, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,20 +100,6 @@ const AuthPage = () => {
 
     setLoading(true);
     
-    // Check if we have an active session first
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      setLoading(false);
-      toast({
-        title: "Session expired",
-        description: "Your password reset link has expired. Please request a new one.",
-        variant: "destructive",
-      });
-      navigate('/auth');
-      return;
-    }
-
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setLoading(false);
 
@@ -116,6 +114,7 @@ const AuthPage = () => {
         title: "Password updated",
         description: "Your password has been successfully updated.",
       });
+      setIsResettingPassword(false);
       navigate('/');
     }
   };
