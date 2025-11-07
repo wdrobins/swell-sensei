@@ -15,19 +15,32 @@ import { Link } from 'react-router-dom';
 import { addDays, format } from 'date-fns';
 
 const Index = () => {
-  // Calculate fit scores for favorite spots
-  const favoriteSpotResults = mockSurferProfile.favoriteSpots.map(spotId => {
-    const spot = surfSpots.find(s => s.id === spotId);
-    const forecast = mockForecast[spotId]?.[0];
-    
-    if (!spot || !forecast) return null;
-    
-    const result = calculateFitScore(spot, forecast, mockSurferProfile);
-    return { spot, result };
-  }).filter(Boolean) as Array<{ spot: any; result: any }>;
+  // Calculate fit scores for recommended spots based on skill level and experience
+  const skillLevelMap = { 'beginner': 1, 'intermediate': 2, 'advanced': 3, 'expert': 4 };
+  const userSkillMap = { 'waist': 1, 'shoulder': 2, 'head': 3, 'overhead': 4, 'double-overhead': 5 };
+  const userSkillLevel = userSkillMap[mockSurferProfile.comfortableWaveSize] || 2;
+  
+  const recommendedSpotResults = surfSpots
+    .filter(spot => {
+      // Filter spots that match user's experience types
+      const matchesExperience = mockSurferProfile.experienceTypes.includes(spot.breakType);
+      // Filter spots at or slightly above user's skill level for progression
+      const spotSkillLevel = skillLevelMap[spot.skillLevel];
+      const matchesSkill = spotSkillLevel <= userSkillLevel + 1;
+      return matchesExperience && matchesSkill;
+    })
+    .map(spot => {
+      const forecast = mockForecast[spot.id]?.[0];
+      if (!forecast) return null;
+      
+      const result = calculateFitScore(spot, forecast, mockSurferProfile);
+      return { spot, result };
+    })
+    .filter(Boolean)
+    .sort((a, b) => (b?.result.score || 0) - (a?.result.score || 0)) as Array<{ spot: any; result: any }>;
 
   // Find best spot today
-  const bestSpot = favoriteSpotResults.reduce((best, current) => 
+  const bestSpot = recommendedSpotResults.reduce((best, current) => 
     !best || current.result.score > best.result.score ? current : best
   , null as any);
 
@@ -111,10 +124,10 @@ const Index = () => {
           </Card>
         </div>
 
-        {/* Your Spots */}
+        {/* Recommended Spots */}
         <section className="mb-12">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-foreground">Your Favorite Spots</h2>
+            <h2 className="text-2xl font-bold text-foreground">Your Recommended Spots</h2>
             <Button asChild variant="ghost" className="text-primary">
               <Link to="/spots" className="flex items-center gap-2">
                 View All <ArrowRight className="h-4 w-4" />
@@ -123,7 +136,7 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {favoriteSpotResults.slice(0, 3).map(({ spot, result }) => (
+            {recommendedSpotResults.slice(0, 3).map(({ spot, result }) => (
               <SpotCard 
                 key={spot.id}
                 spot={spot}
