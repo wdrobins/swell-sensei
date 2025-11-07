@@ -49,7 +49,7 @@ const Index = () => {
               <Waves className="h-16 w-16 mx-auto mb-4" />
             </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-              Surf Coach & Safety Assistant
+              Surf Caddy
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-white/90">
               Get personalized surf recommendations and safety guidance

@@ -348,7 +348,7 @@ const OnboardingPage: React.FC = () => {
         <Card className="shadow-depth">
           <CardHeader>
             <CardTitle className="text-center">
-              Surf Coach & Safety Assistant
+              Surf Caddy
             </CardTitle>
           </CardHeader>
           <CardContent>

@@ -218,7 +218,7 @@ const AuthPage = () => {
             <Waves className="h-8 w-8 text-primary" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Welcome to SCSA</h1>
-          <p className="text-white/80">Your personal surf coach & safety assistant</p>
+          <p className="text-white/80">Your personal Surf Caddy</p>
         </div>
 
         <Card className="shadow-float">
