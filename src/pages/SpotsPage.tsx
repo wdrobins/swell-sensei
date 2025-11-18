@@ -71,7 +71,13 @@ const SpotsPage: React.FC = () => {
         <p className="text-muted-foreground">
           Find the perfect waves for your skill level and preferences
         </p>
-        {forecastData && forecastData.length > 0 && (
+        {isLoading && (
+          <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+            <Cloud className="h-4 w-4 animate-pulse" />
+            <span>Loading live forecast data...</span>
+          </div>
+        )}
+        {!isLoading && forecastData && forecastData.length > 0 && (
           <div className="mt-2 flex items-center gap-2 text-sm text-success">
             <Cloud className="h-4 w-4" />
             <span>Live forecast data from Open-Meteo</span>

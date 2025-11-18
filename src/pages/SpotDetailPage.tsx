@@ -3,17 +3,26 @@ import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import FitScoreCard from '@/components/FitScoreCard';
-import { surfSpots, mockForecast, mockSurferProfile } from '@/lib/mockData';
+import { surfSpots, mockForecast, mockSurferProfile, ForecastData } from '@/lib/mockData';
 import { calculateFitScore } from '@/lib/fitScoring';
+import { useMarineForecast } from '@/hooks/useMarineForecast';
 import { 
   ArrowLeft, MapPin, Waves, Wind, Compass, Clock, 
-  AlertTriangle, Users, Shield, CheckCircle2 
+  AlertTriangle, Users, Shield, CheckCircle2, Cloud 
 } from 'lucide-react';
 
 const SpotDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const spot = surfSpots.find(s => s.id === id);
+  
+  // Fetch real forecast data if spot exists
+  const { data: forecastData, isLoading, isError } = useMarineForecast(
+    spot?.coordinates[0] || 0,
+    spot?.coordinates[1] || 0,
+    !!spot
+  );
   
   if (!spot) {
     return (
@@ -33,7 +42,26 @@ const SpotDetailPage: React.FC = () => {
     );
   }
 
-  const forecast = mockForecast[spot.id]?.[0];
+  // Use real forecast data if available, otherwise fallback to mock
+  let forecast: ForecastData | undefined;
+  let isRealData = false;
+  
+  if (forecastData?.current && !isError) {
+    isRealData = true;
+    forecast = {
+      timestamp: forecastData.current.timestamp,
+      swellHeight: forecastData.current.swellHeight || forecastData.current.waveHeight,
+      swellPeriod: forecastData.current.swellPeriod || forecastData.current.wavePeriod,
+      swellDirection: forecastData.current.swellDirection || forecastData.current.waveDirection,
+      windSpeed: forecastData.current.windSpeed,
+      windDirection: forecastData.current.windDirection,
+      tideLevel: 1.0,
+      confidence: 0.85
+    };
+  } else {
+    forecast = mockForecast[spot.id]?.[0];
+  }
+  
   const fitResult = forecast 
     ? calculateFitScore(spot, forecast, mockSurferProfile) 
     : null;
@@ -53,18 +81,43 @@ const SpotDetailPage: React.FC = () => {
         <h1 className="text-4xl font-bold text-foreground mb-2">
           {spot.name}
         </h1>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <MapPin className="h-4 w-4" />
-          <span>{spot.region}</span>
-          <span className="text-xs">•</span>
-          <span className="capitalize">{spot.breakType} break</span>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            <span>{spot.region}</span>
+            <span className="text-xs">•</span>
+            <span className="capitalize">{spot.breakType} break</span>
+          </div>
+          {isLoading && (
+            <div className="flex items-center gap-2 text-sm">
+              <Cloud className="h-4 w-4 animate-pulse" />
+              <span>Loading live forecast...</span>
+            </div>
+          )}
+          {isRealData && !isLoading && (
+            <div className="flex items-center gap-2 text-sm text-success">
+              <Cloud className="h-4 w-4" />
+              <span>Live forecast data</span>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Fit Score - Full width on mobile, spans 2 cols on desktop */}
         <div className="lg:col-span-2">
-          {fitResult ? (
+          {isLoading ? (
+            <Card className="shadow-float">
+              <CardHeader>
+                <Skeleton className="h-8 w-1/3" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-20 w-full" />
+              </CardContent>
+            </Card>
+          ) : fitResult ? (
             <FitScoreCard result={fitResult} spotName={spot.name} />
           ) : (
             <Card className="shadow-float">
