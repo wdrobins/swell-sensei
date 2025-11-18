@@ -70,10 +70,10 @@ const Index = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 shadow-float">
-                <Link to="/spots">Find Your Wave</Link>
-              </Button>
-              <Button asChild variant="outline" size="lg" className="border-white text-white hover:bg-white/10">
                 <Link to="/onboarding">Setup Profile</Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="border-white/80 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm">
+                <Link to="/spots">Find Your Wave</Link>
               </Button>
             </div>
           </div>
