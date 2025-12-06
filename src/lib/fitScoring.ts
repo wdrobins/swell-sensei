@@ -253,6 +253,80 @@ function getExcitementLabel(score: number): FitScoreResult['excitementLabel'] {
 }
 
 /**
+ * Generate spot-specific coaching tip based on conditions and spot characteristics
+ */
+function generateSpotCoachingTip(
+  spot: SurfSpot,
+  forecast: ForecastData,
+  profile: SurferProfile,
+  ews: number,
+  safetyScore: number,
+  excitementScore: number
+): string {
+  const tips: string[] = [];
+  
+  // Spot-specific tips based on break type
+  if (spot.breakType === 'point') {
+    tips.push(`${spot.name} is a point break - position yourself at the top of the point and wait for the sets to wrap around.`);
+  } else if (spot.breakType === 'reef') {
+    tips.push(`${spot.name} breaks over reef - always know where the rocks are and don't fall head first.`);
+  } else {
+    tips.push(`${spot.name} is a beach break - look for the sandbank channels to paddle out easier.`);
+  }
+  
+  // Hazard-specific tips
+  if (spot.hazards.includes('Rocks') || spot.hazards.includes('Urchins')) {
+    tips.push(`Watch for rocks on entry/exit at ${spot.name}. Wear booties if you're not confident.`);
+  }
+  if (spot.hazards.includes('Strong currents')) {
+    tips.push(`Strong currents here - if you get swept, don't fight it. Paddle parallel to shore.`);
+  }
+  if (spot.hazards.includes('Crowds')) {
+    tips.push(`${spot.name} gets crowded. Be patient, respect the pecking order, and wait for your waves.`);
+  }
+  
+  // Localism tips
+  if (spot.localismLevel === 'heavy') {
+    tips.push(`Heavy local crew at ${spot.name}. Show respect, don't drop in, and you'll be fine.`);
+  } else if (spot.localismLevel === 'moderate') {
+    tips.push(`Give way to locals on the set waves and you'll have a great session.`);
+  }
+  
+  // Condition-specific tips
+  if (ews > 1.5 && profile.comfortableWaveSize === 'waist') {
+    tips.push(`The ${(ews * 3.28).toFixed(1)}ft swell is bigger than your comfort zone. Consider waiting for it to drop or surf the inside section.`);
+  }
+  
+  if (forecast.windSpeed > 20) {
+    tips.push(`Windy conditions today - use a heavier board for better control.`);
+  }
+  
+  if (spot.paddleDistance > 150) {
+    tips.push(`Long paddle out at ${spot.name}. Pace yourself and save energy for the waves.`);
+  }
+  
+  // Entry/exit specific
+  if (!spot.easyEntry) {
+    tips.push(`Tricky entry here. ${spot.entryExitNotes}`);
+  }
+  
+  // Pick the most relevant tip based on conditions
+  if (safetyScore < 50) {
+    // Safety-focused tip
+    const safetyTips = tips.filter(t => 
+      t.includes('rocks') || t.includes('currents') || t.includes('reef') || t.includes('bigger')
+    );
+    return safetyTips[0] || tips[0] || `Take extra care at ${spot.name} today - conditions are challenging.`;
+  }
+  
+  if (excitementScore > 80) {
+    return `Epic conditions at ${spot.name}! ${tips[0] || 'Get out there and make the most of it!'}`;
+  }
+  
+  return tips[0] || `Enjoy your session at ${spot.name}. Remember to warm up before paddling out.`;
+}
+
+/**
  * Main fit scoring function
  */
 export function calculateFitScore(
@@ -338,10 +412,8 @@ export function calculateFitScore(
     forecast.windSpeed > 20 ? 'Strong winds - check conditions on arrival' : 'Check surf before entering'
   ];
   
-  // Coaching tip
-  const coachingTip = profile.goals.length > 0 
-    ? `Focus on: ${profile.goals[0].toLowerCase()}. Start with smaller waves to build confidence.`
-    : 'Remember to warm up before paddling out and stay relaxed in the water.';
+  // Generate spot-specific coaching tip
+  const coachingTip = generateSpotCoachingTip(spot, forecast, profile, ews, dampedSafetyScore, excitementScore);
   
   return {
     score: finalScore,

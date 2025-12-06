@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { SurfSpot } from '@/lib/mockData';
+import { SurfSpot, ForecastData } from '@/lib/mockData';
 import { MapPin, Waves, Wind, Users, Shield, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -11,9 +11,10 @@ interface SpotCardProps {
   fitScore?: number;
   fitLabel?: string;
   showFitScore?: boolean;
+  forecast?: ForecastData;
 }
 
-const SpotCard: React.FC<SpotCardProps> = ({ spot, fitScore, fitLabel, showFitScore = false }) => {
+const SpotCard: React.FC<SpotCardProps> = ({ spot, fitScore, fitLabel, showFitScore = false, forecast }) => {
   const getSkillColor = () => {
     switch (spot.skillLevel) {
       case 'beginner': return 'success';
@@ -30,6 +31,11 @@ const SpotCard: React.FC<SpotCardProps> = ({ spot, fitScore, fitLabel, showFitSc
     if (fitScore >= 60) return 'accent';
     if (fitScore >= 40) return 'warning';
     return 'destructive';
+  };
+
+  // Convert meters to feet
+  const metersToFeet = (meters: number): string => {
+    return (meters * 3.28084).toFixed(1);
   };
 
   return (
@@ -57,6 +63,24 @@ const SpotCard: React.FC<SpotCardProps> = ({ spot, fitScore, fitLabel, showFitSc
       </CardHeader>
       
       <CardContent className="space-y-4">
+        {/* Current Swell Forecast */}
+        {forecast && (
+          <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Waves className="h-5 w-5 text-primary" />
+                <span className="font-bold text-lg text-primary">
+                  {metersToFeet(forecast.swellHeight)}ft @ {forecast.swellPeriod}s
+                </span>
+              </div>
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Wind className="h-4 w-4" />
+                <span>{Math.round(forecast.windSpeed)}kts</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Key Info */}
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div className="flex items-center gap-2">

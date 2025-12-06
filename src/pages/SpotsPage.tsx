@@ -94,7 +94,8 @@ const SpotsPage: React.FC = () => {
       distance: spot.distance,
       fitScore: result?.score,
       fitLabel: result?.label,
-      isRealData: !!realForecast
+      isRealData: !!realForecast,
+      forecast
     };
   }).sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0)); // Sort by fit score descending
 
@@ -263,7 +264,7 @@ const SpotsPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {spotsWithScores.map(({ spot, distance, fitScore, fitLabel }) => (
+          {spotsWithScores.map(({ spot, distance, fitScore, fitLabel, forecast }) => (
             <div key={spot.id} className="relative">
               {filterByDistance && (
                 <Badge 
@@ -279,6 +280,7 @@ const SpotsPage: React.FC = () => {
                 fitScore={fitScore}
                 fitLabel={fitLabel}
                 showFitScore={true}
+                forecast={forecast}
               />
             </div>
           ))}
