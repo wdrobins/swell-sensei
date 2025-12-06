@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import FitScoreCard from '@/components/FitScoreCard';
 import SpotCard from '@/components/SpotCard';
-import InteractiveSurfPrompt from '@/components/InteractiveSurfPrompt';
 import { surfSpots, mockForecast, mockSurferProfile } from '@/lib/mockData';
 import { calculateFitScore } from '@/lib/fitScoring';
 import { 
@@ -82,11 +81,6 @@ const Index = () => {
       </section>
 
       <div className="container mx-auto px-4 py-12">
-        {/* Interactive Surf Prompt */}
-        <div className="mb-12">
-          <InteractiveSurfPrompt />
-        </div>
-
         {/* Quick Dashboard */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
           {/* Today's Best Spot */}
