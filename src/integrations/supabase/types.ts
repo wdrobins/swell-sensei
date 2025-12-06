@@ -228,6 +228,26 @@ export type Database = {
           total_sessions: number | null
           user_id: string | null
         }
+        Insert: {
+          avatar_url?: string | null
+          badges_earned?: never
+          display_name?: string | null
+          goals_completed?: never
+          last_active?: never
+          skill_level?: string | null
+          total_sessions?: never
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          badges_earned?: never
+          display_name?: string | null
+          goals_completed?: never
+          last_active?: never
+          skill_level?: string | null
+          total_sessions?: never
+          user_id?: string | null
+        }
         Relationships: []
       }
     }
