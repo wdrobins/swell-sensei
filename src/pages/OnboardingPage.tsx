@@ -274,7 +274,7 @@ const OnboardingPage: React.FC = () => {
                     variant={formData.riskTolerance === 'aggressive' ? 'default' : 'outline'}
                     onClick={() => setFormData({...formData, riskTolerance: 'aggressive'})}
                   >
-                    Send it
+                    SEND IT!
                   </Button>
                 </div>
               </div>
