@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
 import { Calendar, Clock, MapPin, Waves, TrendingUp, ChevronRight, Star, Info, Navigation } from 'lucide-react';
 import { addDays, format, isToday, isTomorrow } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
@@ -370,24 +371,23 @@ const PlanPage: React.FC = () => {
           
           {selectedLocation && (
             <div className="mt-6 pt-4 border-t">
-              <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                Max travel distance: {maxDistance}km
+              <label className="text-sm font-medium text-muted-foreground mb-4 block">
+                Max travel distance: <span className="text-foreground font-semibold">{maxDistance}km</span>
               </label>
-              <input
-                type="range"
-                min="25"
-                max="300"
-                step="25"
-                value={maxDistance}
-                onChange={(e) => setMaxDistance(Number(e.target.value))}
-                className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+              <Slider
+                value={[maxDistance]}
+                onValueChange={(value) => setMaxDistance(value[0])}
+                min={25}
+                max={300}
+                step={25}
+                className="w-full"
               />
-              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+              <div className="flex justify-between text-xs text-muted-foreground mt-2">
                 <span>25km</span>
                 <span>150km</span>
                 <span>300km</span>
               </div>
-              <p className="text-sm text-muted-foreground mt-2">
+              <p className="text-sm text-muted-foreground mt-3">
                 {nearbySpots.length} spots within {maxDistance}km of {selectedLocation.name}
               </p>
             </div>
