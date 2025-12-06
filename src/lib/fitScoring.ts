@@ -253,7 +253,7 @@ function getExcitementLabel(score: number): FitScoreResult['excitementLabel'] {
 }
 
 /**
- * Generate spot-specific coaching tip based on conditions and spot characteristics
+ * Generate spot-specific coaching tip based on conditions, spot characteristics, and local knowledge
  */
 function generateSpotCoachingTip(
   spot: SurfSpot,
@@ -265,65 +265,102 @@ function generateSpotCoachingTip(
 ): string {
   const tips: string[] = [];
   
-  // Spot-specific tips based on break type
-  if (spot.breakType === 'point') {
-    tips.push(`${spot.name} is a point break - position yourself at the top of the point and wait for the sets to wrap around.`);
-  } else if (spot.breakType === 'reef') {
-    tips.push(`${spot.name} breaks over reef - always know where the rocks are and don't fall head first.`);
-  } else {
-    tips.push(`${spot.name} is a beach break - look for the sandbank channels to paddle out easier.`);
+  // Use actual local knowledge from spot data
+  if (spot.localismLevel === 'heavy') {
+    tips.push(spot.localismNotes || `Heavy local crew at ${spot.name}. Show respect, don't drop in, and you'll be fine.`);
+  } else if (spot.localismLevel === 'moderate' && spot.localismNotes) {
+    tips.push(spot.localismNotes);
+  }
+  
+  // Entry/exit from local knowledge
+  if (!spot.easyEntry && spot.entryExitNotes) {
+    tips.push(spot.entryExitNotes);
   }
   
   // Hazard-specific tips
   if (spot.hazards.includes('Rocks') || spot.hazards.includes('Urchins')) {
-    tips.push(`Watch for rocks on entry/exit at ${spot.name}. Wear booties if you're not confident.`);
+    tips.push(`Watch for rocks on entry/exit. ${spot.breakType === 'reef' ? 'Know the reef layout before paddling out.' : 'Wear booties if unsure.'}`);
   }
   if (spot.hazards.includes('Strong currents')) {
-    tips.push(`Strong currents here - if you get swept, don't fight it. Paddle parallel to shore.`);
+    tips.push(`Strong currents at ${spot.name} - if you get swept, paddle parallel to shore, not against it.`);
   }
-  if (spot.hazards.includes('Crowds')) {
-    tips.push(`${spot.name} gets crowded. Be patient, respect the pecking order, and wait for your waves.`);
-  }
-  
-  // Localism tips
-  if (spot.localismLevel === 'heavy') {
-    tips.push(`Heavy local crew at ${spot.name}. Show respect, don't drop in, and you'll be fine.`);
-  } else if (spot.localismLevel === 'moderate') {
-    tips.push(`Give way to locals on the set waves and you'll have a great session.`);
+  if (spot.hazards.includes('Rips')) {
+    tips.push(`Watch for rips. Use them to paddle out, but know where they'll take you.`);
   }
   
-  // Condition-specific tips
-  if (ews > 1.5 && profile.comfortableWaveSize === 'waist') {
-    tips.push(`The ${(ews * 3.28).toFixed(1)}ft swell is bigger than your comfort zone. Consider waiting for it to drop or surf the inside section.`);
+  // Condition-specific tips based on actual forecast
+  const waveHeightFt = ews * 3.28;
+  if (waveHeightFt > 5 && profile.comfortableWaveSize === 'waist') {
+    tips.push(`${waveHeightFt.toFixed(0)}ft is above your comfort zone. Surf the inside section or wait for it to drop.`);
+  } else if (waveHeightFt > 6) {
+    tips.push(`Solid ${waveHeightFt.toFixed(0)}ft swell - make sure your leash is in good condition.`);
   }
   
-  if (forecast.windSpeed > 20) {
-    tips.push(`Windy conditions today - use a heavier board for better control.`);
+  if (forecast.windSpeed > 25) {
+    tips.push(`Strong ${Math.round(forecast.windSpeed)}kt winds - consider a heavier board or wait for it to ease.`);
+  } else if (forecast.windSpeed < 8) {
+    tips.push(`Light winds mean clean conditions - great for working on your technique.`);
   }
   
+  // Long paddle warning
   if (spot.paddleDistance > 150) {
-    tips.push(`Long paddle out at ${spot.name}. Pace yourself and save energy for the waves.`);
+    tips.push(`${spot.paddleDistance}m paddle to the lineup. Pace yourself and save energy for the waves.`);
   }
   
-  // Entry/exit specific
-  if (!spot.easyEntry) {
-    tips.push(`Tricky entry here. ${spot.entryExitNotes}`);
+  // Crowd factor tips
+  if (spot.crowdFactor >= 8) {
+    tips.push(`${spot.name} gets busy. Arrive early for the best waves and less competition.`);
+  } else if (spot.crowdFactor <= 3) {
+    tips.push(`Uncrowded spot - enjoy the space but always surf with a buddy.`);
+  }
+  
+  // Break-type specific positioning advice
+  if (spot.breakType === 'point') {
+    tips.push(`Point break - position at the top of the point and wait for sets to wrap around.`);
+  } else if (spot.breakType === 'reef') {
+    tips.push(`Reef break - know the takeoff zone and don't fall head-first in shallow sections.`);
+  }
+  
+  // Seasonality tip if relevant
+  if (spot.seasonality && spot.seasonality.toLowerCase().includes('winter') && new Date().getMonth() >= 5 && new Date().getMonth() <= 8) {
+    tips.push(`Peak season at ${spot.name}. ${spot.seasonality}`);
   }
   
   // Pick the most relevant tip based on conditions
-  if (safetyScore < 50) {
-    // Safety-focused tip
+  if (safetyScore < 40) {
     const safetyTips = tips.filter(t => 
-      t.includes('rocks') || t.includes('currents') || t.includes('reef') || t.includes('bigger')
+      t.toLowerCase().includes('rock') || 
+      t.toLowerCase().includes('current') || 
+      t.toLowerCase().includes('wind') || 
+      t.toLowerCase().includes('comfort')
     );
-    return safetyTips[0] || tips[0] || `Take extra care at ${spot.name} today - conditions are challenging.`;
+    return safetyTips[0] || `Challenging conditions at ${spot.name} today. Consider your limits carefully.`;
+  }
+  
+  if (safetyScore < 60) {
+    const cautionTips = tips.filter(t => 
+      t.toLowerCase().includes('paddle') || 
+      t.toLowerCase().includes('rip') || 
+      t.toLowerCase().includes('local')
+    );
+    return cautionTips[0] || tips[0] || `Stay aware at ${spot.name} - conditions require attention.`;
   }
   
   if (excitementScore > 80) {
-    return `Epic conditions at ${spot.name}! ${tips[0] || 'Get out there and make the most of it!'}`;
+    const funTips = tips.filter(t => 
+      t.toLowerCase().includes('clean') || 
+      t.toLowerCase().includes('technique') || 
+      t.toLowerCase().includes('peak season')
+    );
+    return funTips[0] || `Epic conditions at ${spot.name}! ${tips[0] || 'Get out there and score some waves!'}`;
   }
   
-  return tips[0] || `Enjoy your session at ${spot.name}. Remember to warm up before paddling out.`;
+  // Default to localism or entry/exit advice for friendly conditions
+  if (spot.localismNotes && spot.localismLevel !== 'friendly') {
+    return spot.localismNotes;
+  }
+  
+  return tips[0] || `Enjoy your session at ${spot.name}. ${spot.easyEntry ? 'Easy entry makes for a relaxed paddle out.' : 'Take your time on entry.'}`;
 }
 
 /**
