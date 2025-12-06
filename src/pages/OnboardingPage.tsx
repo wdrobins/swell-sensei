@@ -389,8 +389,8 @@ const OnboardingPage: React.FC = () => {
         </Card>
 
         {/* Safety Note */}
-        <div className="mt-6 p-4 bg-accent/10 border border-accent/30 rounded-lg text-center">
-          <p className="text-sm text-accent-foreground">
+        <div className="mt-6 p-4 bg-primary/10 border border-primary/30 rounded-lg text-center">
+          <p className="text-sm text-primary">
             🌊 This profile helps us provide personalized surf recommendations and safety guidance
           </p>
         </div>
