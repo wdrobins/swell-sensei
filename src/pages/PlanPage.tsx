@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, MapPin, Waves, TrendingUp, ChevronRight, Star, Info } from 'lucide-react';
+import { Calendar, Clock, MapPin, Waves, TrendingUp, ChevronRight, Star, Info, Navigation } from 'lucide-react';
 import { addDays, format, isToday, isTomorrow } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,7 +22,30 @@ interface SpotRecommendation {
   spot: typeof surfSpots[0];
   fitResult: FitScoreResult;
   forecast: ForecastData;
+  distance?: number;
 }
+
+interface Location {
+  id: string;
+  name: string;
+  region: string;
+  coordinates: [number, number];
+}
+
+const locations: Location[] = [
+  { id: 'melbourne', name: 'Melbourne', region: 'VIC', coordinates: [-37.8136, 144.9631] },
+  { id: 'geelong', name: 'Geelong', region: 'VIC', coordinates: [-38.1499, 144.3617] },
+  { id: 'torquay', name: 'Torquay', region: 'VIC', coordinates: [-38.3289, 144.3259] },
+  { id: 'lorne', name: 'Lorne', region: 'VIC', coordinates: [-38.5418, 143.9789] },
+  { id: 'sydney', name: 'Sydney', region: 'NSW', coordinates: [-33.8688, 151.2093] },
+  { id: 'wollongong', name: 'Wollongong', region: 'NSW', coordinates: [-34.4278, 150.8931] },
+  { id: 'newcastle', name: 'Newcastle', region: 'NSW', coordinates: [-32.9283, 151.7817] },
+  { id: 'goldcoast', name: 'Gold Coast', region: 'QLD', coordinates: [-28.0167, 153.4000] },
+  { id: 'brisbane', name: 'Brisbane', region: 'QLD', coordinates: [-27.4705, 153.0260] },
+  { id: 'adelaide', name: 'Adelaide', region: 'SA', coordinates: [-34.9285, 138.6007] },
+  { id: 'perth', name: 'Perth', region: 'WA', coordinates: [-31.9505, 115.8605] },
+  { id: 'margaret-river', name: 'Margaret River', region: 'WA', coordinates: [-33.9536, 115.0753] },
+];
 
 const timeSlots: TimeSlot[] = [
   { time: '6-8am', label: 'Dawn', hour: 6 },
@@ -33,12 +56,26 @@ const timeSlots: TimeSlot[] = [
   { time: '4-6pm', label: 'Evening', hour: 16 },
 ];
 
+// Calculate distance between two coordinates (Haversine formula)
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
 const PlanPage: React.FC = () => {
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<TimeSlot | null>(null);
   const [recommendations, setRecommendations] = useState<SpotRecommendation[]>([]);
   const [isBooking, setIsBooking] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [maxDistance, setMaxDistance] = useState<number>(150); // km
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -79,9 +116,27 @@ const PlanPage: React.FC = () => {
     return x - Math.floor(x);
   };
 
-  // Generate recommendations when date and time are selected
+  // Filter spots by distance from selected location
+  const nearbySpots = useMemo(() => {
+    if (!selectedLocation) return [];
+    
+    return surfSpots
+      .map(spot => ({
+        ...spot,
+        distance: calculateDistance(
+          selectedLocation.coordinates[0],
+          selectedLocation.coordinates[1],
+          spot.coordinates[0],
+          spot.coordinates[1]
+        )
+      }))
+      .filter(spot => spot.distance <= maxDistance)
+      .sort((a, b) => a.distance - b.distance);
+  }, [selectedLocation, maxDistance]);
+
+  // Generate recommendations when all selections are made
   useEffect(() => {
-    if (!selectedDate || !selectedTime) {
+    if (!selectedLocation || !selectedDate || !selectedTime) {
       setRecommendations([]);
       return;
     }
@@ -97,28 +152,21 @@ const PlanPage: React.FC = () => {
     const windMultiplier = selectedTime.hour <= 8 ? 0.6 : selectedTime.hour >= 14 ? 1.4 : 1.0;
     const baseSwellDir = 200; // SW swell
 
-    // Calculate fit scores for all spots with spot-specific variations
-    const spotScores: SpotRecommendation[] = surfSpots.map((spot, index) => {
-      // Create spot-specific forecast variations based on location and orientation
+    // Calculate fit scores for nearby spots only
+    const spotScores: SpotRecommendation[] = nearbySpots.map((spot, index) => {
       const spotSeed = index + dayIndex * 100 + selectedTime.hour;
       const spotVariation = seededRandom(spotSeed);
       
-      // Vary swell height slightly based on spot exposure
       const exposureFactor = spot.breakType === 'point' ? 0.9 : spot.breakType === 'reef' ? 1.0 : 1.1;
       const swellHeight = dayForecast.swellHeight * timeMultiplier * exposureFactor * (0.9 + spotVariation * 0.2);
       
-      // Wind direction varies - some spots get more shelter
       const shelterBonus = spot.easyEntry ? 0.8 : 1.0;
       const windSpeed = dayForecast.windSpeed * windMultiplier * shelterBonus * (0.8 + spotVariation * 0.4);
       
-      // Wind direction - morning offshore, afternoon onshore with variation
       const baseWindDir = selectedTime.hour <= 10 ? 30 : 180;
       const windDirection = baseWindDir + (spotVariation * 60 - 30);
-      
-      // Swell direction varies slightly per spot
       const swellDirection = baseSwellDir + (spotVariation * 40 - 20);
       
-      // Tide level based on time with spot-specific ideal matching
       const baseTide = 1.0 + Math.sin(selectedTime.hour / 6 * Math.PI) * 0.5;
       const tideLevel = spot.idealTide === 'low' ? baseTide * 0.7 : 
                         spot.idealTide === 'high' ? baseTide * 1.3 : baseTide;
@@ -135,13 +183,20 @@ const PlanPage: React.FC = () => {
       };
 
       const fitResult = calculateFitScore(spot, forecast, mockSurferProfile);
-      return { spot, fitResult, forecast };
+      return { spot, fitResult, forecast, distance: spot.distance };
     });
 
     // Sort by score and take top recommendations
     const sorted = spotScores.sort((a, b) => b.fitResult.score - a.fitResult.score);
     setRecommendations(sorted.slice(0, 5));
-  }, [selectedDate, selectedTime]);
+  }, [selectedLocation, selectedDate, selectedTime, nearbySpots]);
+
+  const handleLocationSelect = (location: Location) => {
+    setSelectedLocation(location);
+    setSelectedDate(null);
+    setSelectedTime(null);
+    setRecommendations([]);
+  };
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
@@ -164,7 +219,7 @@ const PlanPage: React.FC = () => {
       return;
     }
 
-    if (!selectedDate || !selectedTime) return;
+    if (!selectedDate || !selectedTime || !selectedLocation) return;
 
     setIsBooking(true);
 
@@ -182,7 +237,9 @@ const PlanPage: React.FC = () => {
           spotId: recommendation.spot.id,
           spotName: recommendation.spot.name,
           score: recommendation.fitResult.score,
-          conditions: `${(recommendation.forecast.swellHeight * 3.28).toFixed(0)}ft @ ${recommendation.forecast.swellPeriod}s`
+          conditions: `${(recommendation.forecast.swellHeight * 3.28).toFixed(0)}ft @ ${recommendation.forecast.swellPeriod}s`,
+          location: selectedLocation.name,
+          distance: recommendation.distance
         }
       };
 
@@ -246,6 +303,16 @@ const PlanPage: React.FC = () => {
     return `${low}-${high}`;
   };
 
+  // Group locations by region
+  const locationsByRegion = useMemo(() => {
+    const grouped: Record<string, Location[]> = {};
+    locations.forEach(loc => {
+      if (!grouped[loc.region]) grouped[loc.region] = [];
+      grouped[loc.region].push(loc);
+    });
+    return grouped;
+  }, []);
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
@@ -254,70 +321,142 @@ const PlanPage: React.FC = () => {
           Plan Your Session
         </h1>
         <p className="text-muted-foreground">
-          Select a day and time, and we'll recommend the best spot for you
+          Tell us where you are, and we'll find the best spot for your session
         </p>
       </div>
 
-      {/* Step 1: Select Day */}
+      {/* Step 1: Select Location */}
       <Card className="mb-6 shadow-float bg-gradient-to-r from-primary/5 to-accent/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            Step 1: Choose Your Day
-            {selectedDate && (
+            <Navigation className="h-5 w-5 text-primary" />
+            Step 1: Where Are You?
+            {selectedLocation && (
               <Badge variant="success" className="ml-auto">
-                {isToday(selectedDate) ? 'Today' : isTomorrow(selectedDate) ? 'Tomorrow' : format(selectedDate, 'EEE, MMM d')}
+                {selectedLocation.name}, {selectedLocation.region}
               </Badge>
             )}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-            {weeklyForecast.map((day, index) => {
-              const date = addDays(new Date(), index);
-              const dayName = isToday(date) 
-                ? 'Today' 
-                : isTomorrow(date) 
-                  ? 'Tomorrow' 
-                  : format(date, 'EEE');
-              const dateStr = format(date, 'MMM d');
-              const isSelected = selectedDate && format(selectedDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
-              
-              return (
-                <button
-                  key={index}
-                  onClick={() => handleDateSelect(date)}
-                  className={`text-center p-4 rounded-lg transition-all hover:scale-105 cursor-pointer ${
-                    isSelected 
-                      ? 'bg-primary text-primary-foreground shadow-lg ring-2 ring-primary' 
-                      : 'bg-background/50 hover:bg-background border border-border/50'
-                  }`}
-                >
-                  <div className="text-sm font-medium mb-1">{dayName}</div>
-                  <div className="text-xs mb-2 opacity-80">{dateStr}</div>
-                  <div className={`text-2xl font-bold mb-1 ${
-                    isSelected ? '' : getScoreColor(day.score)
-                  }`}>
-                    {day.score}
-                  </div>
-                  <div className="text-xs opacity-80 mb-1">{day.quality}</div>
-                  <div className="text-xs opacity-70">{day.conditions}</div>
-                </button>
-              );
-            })}
+          <div className="space-y-4">
+            {Object.entries(locationsByRegion).map(([region, locs]) => (
+              <div key={region}>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">{region}</h4>
+                <div className="flex flex-wrap gap-2">
+                  {locs.map((loc) => {
+                    const isSelected = selectedLocation?.id === loc.id;
+                    return (
+                      <button
+                        key={loc.id}
+                        onClick={() => handleLocationSelect(loc)}
+                        className={`px-4 py-2 rounded-lg transition-all hover:scale-105 ${
+                          isSelected 
+                            ? 'bg-primary text-primary-foreground shadow-lg ring-2 ring-primary' 
+                            : 'bg-background/50 hover:bg-background border border-border/50'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4" />
+                          {loc.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
+          
+          {selectedLocation && (
+            <div className="mt-6 pt-4 border-t">
+              <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                Max travel distance: {maxDistance}km
+              </label>
+              <input
+                type="range"
+                min="25"
+                max="300"
+                step="25"
+                value={maxDistance}
+                onChange={(e) => setMaxDistance(Number(e.target.value))}
+                className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>25km</span>
+                <span>150km</span>
+                <span>300km</span>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                {nearbySpots.length} spots within {maxDistance}km of {selectedLocation.name}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Step 2: Select Time */}
-      {selectedDate && (
+      {/* Step 2: Select Day */}
+      {selectedLocation && (
         <Card className="mb-6 shadow-float animate-fade-in">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-accent" />
-              Step 2: Choose Your Time
-              {selectedTime && (
+              <Calendar className="h-5 w-5 text-accent" />
+              Step 2: Choose Your Day
+              {selectedDate && (
                 <Badge variant="accent" className="ml-auto">
+                  {isToday(selectedDate) ? 'Today' : isTomorrow(selectedDate) ? 'Tomorrow' : format(selectedDate, 'EEE, MMM d')}
+                </Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+              {weeklyForecast.map((day, index) => {
+                const date = addDays(new Date(), index);
+                const dayName = isToday(date) 
+                  ? 'Today' 
+                  : isTomorrow(date) 
+                    ? 'Tomorrow' 
+                    : format(date, 'EEE');
+                const dateStr = format(date, 'MMM d');
+                const isSelected = selectedDate && format(selectedDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
+                
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleDateSelect(date)}
+                    className={`text-center p-4 rounded-lg transition-all hover:scale-105 cursor-pointer ${
+                      isSelected 
+                        ? 'bg-accent text-accent-foreground shadow-lg ring-2 ring-accent' 
+                        : 'bg-background/50 hover:bg-background border border-border/50'
+                    }`}
+                  >
+                    <div className="text-sm font-medium mb-1">{dayName}</div>
+                    <div className="text-xs mb-2 opacity-80">{dateStr}</div>
+                    <div className={`text-2xl font-bold mb-1 ${
+                      isSelected ? '' : getScoreColor(day.score)
+                    }`}>
+                      {day.score}
+                    </div>
+                    <div className="text-xs opacity-80 mb-1">{day.quality}</div>
+                    <div className="text-xs opacity-70">{day.conditions}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 3: Select Time */}
+      {selectedLocation && selectedDate && (
+        <Card className="mb-6 shadow-float animate-fade-in">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-warning" />
+              Step 3: Choose Your Time
+              {selectedTime && (
+                <Badge variant="warning" className="ml-auto">
                   {selectedTime.label} ({selectedTime.time})
                 </Badge>
               )}
@@ -335,7 +474,7 @@ const PlanPage: React.FC = () => {
                     onClick={() => handleTimeSelect(slot)}
                     className={`text-center p-4 rounded-lg transition-all hover:scale-105 ${
                       isSelected 
-                        ? 'bg-accent text-accent-foreground shadow-lg ring-2 ring-accent' 
+                        ? 'bg-warning text-warning-foreground shadow-lg ring-2 ring-warning' 
                         : 'bg-background/50 hover:bg-background border border-border/50'
                     }`}
                   >
@@ -358,13 +497,13 @@ const PlanPage: React.FC = () => {
         </Card>
       )}
 
-      {/* Step 3: Recommendations */}
+      {/* Step 4: Recommendations */}
       {recommendations.length > 0 && (
         <Card className="shadow-float animate-fade-in">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Star className="h-5 w-5 text-warning" />
-              Recommended Spots for {selectedTime?.label}
+              <Star className="h-5 w-5 text-success" />
+              Best Spots Near {selectedLocation?.name} for {selectedTime?.label}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -395,7 +534,11 @@ const PlanPage: React.FC = () => {
                         </Badge>
                       </div>
                       
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                      <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mb-2">
+                        <span className="flex items-center gap-1">
+                          <Navigation className="h-3 w-3" />
+                          {rec.distance?.toFixed(0)}km away
+                        </span>
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
                           {rec.spot.region}
@@ -449,20 +592,36 @@ const PlanPage: React.FC = () => {
         </Card>
       )}
 
-      {/* Empty State */}
-      {!selectedDate && (
+      {/* Empty States */}
+      {!selectedLocation && (
         <div className="text-center py-12 text-muted-foreground">
-          <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p className="text-lg">Select a day above to get started</p>
-          <p className="text-sm">We'll find the best spot for your session</p>
+          <Navigation className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p className="text-lg">Select your location to get started</p>
+          <p className="text-sm">We'll find the best spots within your travel distance</p>
         </div>
       )}
 
-      {selectedDate && !selectedTime && (
+      {selectedLocation && !selectedDate && (
+        <div className="text-center py-12 text-muted-foreground">
+          <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p className="text-lg">Now choose your day</p>
+          <p className="text-sm">{nearbySpots.length} spots within {maxDistance}km of {selectedLocation.name}</p>
+        </div>
+      )}
+
+      {selectedLocation && selectedDate && !selectedTime && (
         <div className="text-center py-12 text-muted-foreground">
           <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p className="text-lg">Now choose your preferred time</p>
+          <p className="text-lg">Choose your preferred time</p>
           <p className="text-sm">Morning sessions typically have better conditions</p>
+        </div>
+      )}
+
+      {selectedLocation && selectedDate && selectedTime && recommendations.length === 0 && nearbySpots.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground">
+          <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p className="text-lg">No spots found within {maxDistance}km</p>
+          <p className="text-sm">Try increasing your travel distance</p>
         </div>
       )}
     </div>
