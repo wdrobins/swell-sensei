@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { FitScoreResult } from '@/lib/fitScoring';
-import { AlertTriangle, CheckCircle, Activity, Clock } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Activity, Clock, Shield, Zap } from 'lucide-react';
 
 interface FitScoreCardProps {
   result: FitScoreResult;
@@ -33,6 +33,15 @@ const FitScoreCard: React.FC<FitScoreCardProps> = ({ result, spotName }) => {
     }
   };
 
+  const getExcitementColor = () => {
+    switch (result.excitementLabel) {
+      case 'Epic': return 'text-primary bg-primary/10 border-primary/30';
+      case 'Pumping': return 'text-accent bg-accent/10 border-accent/30';
+      case 'Fun': return 'text-success bg-success/10 border-success/30';
+      case 'Mellow': return 'text-muted-foreground bg-muted border-muted';
+    }
+  };
+
   return (
     <Card className={`shadow-float ${getScoreColor()}`}>
       <CardHeader className="pb-3">
@@ -42,16 +51,41 @@ const FitScoreCard: React.FC<FitScoreCardProps> = ({ result, spotName }) => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Score Display */}
+        {/* Combined Score Display */}
         <div className="text-center space-y-2">
           <div className="text-4xl font-bold text-foreground">
             {result.score}
             <span className="text-lg text-muted-foreground">/100</span>
           </div>
-          <Badge variant="outline" className={`text-${result.color} border-${result.color}/50`}>
-            {result.label}
-          </Badge>
+          <div className="flex justify-center gap-2">
+            <Badge variant="outline" className={`text-${result.color} border-${result.color}/50`}>
+              {result.label}
+            </Badge>
+            <Badge variant="outline" className={getExcitementColor()}>
+              {result.excitementLabel}
+            </Badge>
+          </div>
           <Progress value={result.score} className="w-full h-2" />
+        </div>
+
+        {/* Safety & Excitement Breakdown */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-muted/50 rounded-lg p-3 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <Shield className="h-4 w-4 text-success" />
+              <span className="text-xs font-medium text-muted-foreground uppercase">Safety</span>
+            </div>
+            <div className="text-2xl font-bold text-success">{result.safetyScore}</div>
+            <Progress value={result.safetyScore} className="w-full h-1.5 mt-1" />
+          </div>
+          <div className="bg-muted/50 rounded-lg p-3 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <Zap className="h-4 w-4 text-primary" />
+              <span className="text-xs font-medium text-muted-foreground uppercase">Excitement</span>
+            </div>
+            <div className="text-2xl font-bold text-primary">{result.excitementScore}</div>
+            <Progress value={result.excitementScore} className="w-full h-1.5 mt-1" />
+          </div>
         </div>
 
         {/* Reasoning */}
