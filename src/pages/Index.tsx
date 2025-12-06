@@ -1,48 +1,92 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import FitScoreCard from '@/components/FitScoreCard';
 import SpotCard from '@/components/SpotCard';
-import { surfSpots, mockForecast, mockSurferProfile } from '@/lib/mockData';
+import { surfSpots, mockForecast, mockSurferProfile, ForecastData } from '@/lib/mockData';
 import { calculateFitScore } from '@/lib/fitScoring';
 import { 
   Waves, TrendingUp, Clock, MapPin, 
   ArrowRight, Sun, Wind, Calendar,
-  CheckCircle2, AlertTriangle 
+  CheckCircle2, AlertTriangle, Sunrise, Sunset
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { addDays, format } from 'date-fns';
 
+// Get time-of-day label and info
+const getTimeOfDayInfo = () => {
+  const hour = new Date().getHours();
+  
+  if (hour >= 5 && hour < 8) {
+    return { label: 'Dawn', period: 'dawn', icon: Sunrise, quality: 'excellent', message: 'Light winds and clean conditions - best time to surf!' };
+  } else if (hour >= 8 && hour < 11) {
+    return { label: 'Morning', period: 'morning', icon: Sun, quality: 'good', message: 'Still good conditions before the wind picks up.' };
+  } else if (hour >= 11 && hour < 14) {
+    return { label: 'Midday', period: 'midday', icon: Sun, quality: 'fair', message: 'Winds typically building - check conditions carefully.' };
+  } else if (hour >= 14 && hour < 17) {
+    return { label: 'Afternoon', period: 'afternoon', icon: Wind, quality: 'variable', message: 'Often windy - look for sheltered spots.' };
+  } else if (hour >= 17 && hour < 20) {
+    return { label: 'Evening', period: 'evening', icon: Sunset, quality: 'improving', message: 'Winds often ease - glass-off conditions possible.' };
+  } else {
+    return { label: 'Night', period: 'night', icon: Clock, quality: 'none', message: 'Wait for dawn patrol tomorrow!' };
+  }
+};
+
 const Index = () => {
+  const timeInfo = getTimeOfDayInfo();
+  const currentHour = new Date().getHours();
+  
+  // Calculate time-adjusted forecasts for all spots
+  const timeAdjustedResults = useMemo(() => {
+    // Seeded random for consistency
+    const seededRandom = (seed: number) => {
+      const x = Math.sin(seed) * 10000;
+      return x - Math.floor(x);
+    };
+
+    const timeMultiplier = currentHour <= 8 ? 1.1 : currentHour >= 14 ? 0.85 : 1.0;
+    const windMultiplier = currentHour <= 8 ? 0.6 : currentHour >= 14 ? 1.4 : 1.0;
+    
+    return surfSpots.map((spot, index) => {
+      const baseForecast = mockForecast[spot.id]?.[0];
+      if (!baseForecast) return null;
+      
+      const spotVariation = seededRandom(index + currentHour);
+      
+      // Adjust forecast based on time of day
+      const forecast: ForecastData = {
+        ...baseForecast,
+        swellHeight: baseForecast.swellHeight * timeMultiplier * (0.9 + spotVariation * 0.2),
+        windSpeed: baseForecast.windSpeed * windMultiplier * (0.8 + spotVariation * 0.4),
+        windDirection: currentHour <= 10 ? 30 + spotVariation * 30 : 150 + spotVariation * 60,
+      };
+      
+      const result = calculateFitScore(spot, forecast, mockSurferProfile);
+      return { spot, result, forecast };
+    }).filter(Boolean) as Array<{ spot: any; result: any; forecast: ForecastData }>;
+  }, [currentHour]);
+
+  // Find best spot for right now
+  const bestSpotNow = useMemo(() => {
+    return timeAdjustedResults.reduce((best, current) => 
+      !best || current.result.score > best.result.score ? current : best
+    , null as any);
+  }, [timeAdjustedResults]);
+
   // Calculate fit scores for recommended spots based on skill level and experience
   const skillLevelMap = { 'beginner': 1, 'intermediate': 2, 'advanced': 3, 'expert': 4 };
   const userSkillMap = { 'waist': 1, 'shoulder': 2, 'head': 3, 'overhead': 4, 'double-overhead': 5 };
   const userSkillLevel = userSkillMap[mockSurferProfile.comfortableWaveSize] || 2;
   
-  const recommendedSpotResults = surfSpots
-    .filter(spot => {
-      // Filter spots that match user's experience types
-      const matchesExperience = mockSurferProfile.experienceTypes.includes(spot.breakType);
-      // Filter spots at or slightly above user's skill level for progression
-      const spotSkillLevel = skillLevelMap[spot.skillLevel];
+  const recommendedSpotResults = timeAdjustedResults
+    .filter(item => {
+      const matchesExperience = mockSurferProfile.experienceTypes.includes(item.spot.breakType);
+      const spotSkillLevel = skillLevelMap[item.spot.skillLevel as keyof typeof skillLevelMap];
       const matchesSkill = spotSkillLevel <= userSkillLevel + 1;
       return matchesExperience && matchesSkill;
     })
-    .map(spot => {
-      const forecast = mockForecast[spot.id]?.[0];
-      if (!forecast) return null;
-      
-      const result = calculateFitScore(spot, forecast, mockSurferProfile);
-      return { spot, result };
-    })
-    .filter(Boolean)
-    .sort((a, b) => (b?.result.score || 0) - (a?.result.score || 0)) as Array<{ spot: any; result: any }>;
-
-  // Find best spot today
-  const bestSpot = recommendedSpotResults.reduce((best, current) => 
-    !best || current.result.score > best.result.score ? current : best
-  , null as any);
+    .sort((a, b) => b.result.score - a.result.score);
 
   const todaysConditions = [
     { label: 'Swell', value: '1.5-2m SW', icon: Waves, color: 'text-accent' },
@@ -50,6 +94,17 @@ const Index = () => {
     { label: 'Tide', value: 'Rising to 1.2m', icon: Clock, color: 'text-success' },
     { label: 'Weather', value: '18°C Partly cloudy', icon: Sun, color: 'text-warning' }
   ];
+
+  const getQualityColor = (quality: string) => {
+    switch (quality) {
+      case 'excellent': return 'text-success';
+      case 'good': return 'text-accent';
+      case 'improving': return 'text-accent';
+      case 'fair': return 'text-warning';
+      case 'variable': return 'text-warning';
+      default: return 'text-muted-foreground';
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -81,14 +136,69 @@ const Index = () => {
       </section>
 
       <div className="container mx-auto px-4 py-12">
+        {/* Time-Based Recommendation */}
+        <Card className="mb-8 shadow-float bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <timeInfo.icon className="h-5 w-5 text-primary" />
+              Best Spot Right Now ({timeInfo.label})
+              <Badge variant="outline" className={`ml-auto ${getQualityColor(timeInfo.quality)}`}>
+                {timeInfo.quality.charAt(0).toUpperCase() + timeInfo.quality.slice(1)} Conditions
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">{timeInfo.message}</p>
+            {bestSpotNow && timeInfo.quality !== 'none' ? (
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-background/50 rounded-lg">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-xl font-bold">{bestSpotNow.spot.name}</h3>
+                    <Badge variant={bestSpotNow.result.color as any}>
+                      {bestSpotNow.result.label}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {bestSpotNow.spot.region} • {bestSpotNow.spot.breakType} break
+                  </p>
+                  <p className="text-sm">{bestSpotNow.result.coachingTip}</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-center">
+                    <div className={`text-4xl font-bold ${
+                      bestSpotNow.result.score >= 80 ? 'text-success' :
+                      bestSpotNow.result.score >= 60 ? 'text-accent' :
+                      bestSpotNow.result.score >= 40 ? 'text-warning' : 'text-destructive'
+                    }`}>
+                      {bestSpotNow.result.score}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Fit Score</div>
+                  </div>
+                  <Button asChild className="bg-gradient-ocean">
+                    <Link to={`/spots/${bestSpotNow.spot.id}`}>
+                      View Spot
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <p className="text-muted-foreground">Check back at dawn for the best conditions!</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Quick Dashboard */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-          {/* Today's Best Spot */}
+          {/* Today's Best Spot - FitScoreCard */}
           <div className="lg:col-span-2">
-            {bestSpot && (
+            {bestSpotNow && (
               <FitScoreCard 
-                result={bestSpot.result} 
-                spotName={bestSpot.spot.name}
+                result={bestSpotNow.result} 
+                spotName={bestSpotNow.spot.name}
               />
             )}
           </div>
