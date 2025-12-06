@@ -28,7 +28,7 @@ const Navigation: React.FC = () => {
               <Waves className="h-5 w-5 text-white" />
             </div>
             <div className="hidden sm:block">
-              <span className="font-bold text-foreground">SCSA</span>
+              <span className="font-bold text-foreground">🏄‍♂️</span>
               <Badge variant="secondary" className="ml-2 text-xs">Beta</Badge>
             </div>
           </Link>
