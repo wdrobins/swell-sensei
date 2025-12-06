@@ -29,6 +29,7 @@ const OnboardingPage: React.FC = () => {
     riskTolerance: '',
     canDuckDive: null as boolean | null,
     goals: [] as string[],
+    homeLocation: '',
     homeRadius: 25
   });
 
@@ -326,6 +327,20 @@ const OnboardingPage: React.FC = () => {
                     </Button>
                   ))}
                 </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="location">Where do you live?</Label>
+                <Input
+                  id="location"
+                  value={formData.homeLocation}
+                  onChange={(e) => setFormData({...formData, homeLocation: e.target.value})}
+                  placeholder="e.g. Sydney, Australia"
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  We'll use this to suggest surf spots near you
+                </p>
               </div>
               
               <div>
