@@ -12,6 +12,7 @@ export interface SurfSpot {
   idealSwellDirs: number[];
   idealWindDirs: number[];
   idealTide: 'low' | 'mid' | 'high' | 'any';
+  idealTideMovement: 'incoming' | 'outgoing' | 'slack' | 'any';
   paddleDistance: number;
   entryExitNotes: string;
   seasonality: string;
@@ -20,6 +21,11 @@ export interface SurfSpot {
   shortPaddle: boolean;
   crowdFactor: number;
   skillLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  // Local knowledge
+  parking: string;
+  facilities: string[];
+  localismLevel: 'friendly' | 'moderate' | 'heavy';
+  localismNotes: string;
 }
 
 export interface ForecastData {
@@ -65,6 +71,7 @@ export const surfSpots: SurfSpot[] = [
     idealSwellDirs: [180, 210, 240],
     idealWindDirs: [0, 30, 60, 330],
     idealTide: 'mid',
+    idealTideMovement: 'incoming',
     paddleDistance: 200,
     entryExitNotes: 'Rocky entry, watch for sweep on big days. Long paddle to lineup.',
     seasonality: 'Best in autumn/winter with SW swells',
@@ -72,7 +79,11 @@ export const surfSpots: SurfSpot[] = [
     easyEntry: false,
     shortPaddle: false,
     crowdFactor: 8,
-    skillLevel: 'advanced'
+    skillLevel: 'advanced',
+    parking: 'Large sealed car park at top of cliff. Free parking. Can fill up on good days.',
+    facilities: ['Toilets', 'Outdoor showers', 'Viewing platform', 'Walking tracks'],
+    localismLevel: 'heavy',
+    localismNotes: 'Iconic spot with strong local crew. Respect the lineup, wait your turn. Avoid weekends if inexperienced.'
   },
   {
     id: 'winkipop',
@@ -86,6 +97,7 @@ export const surfSpots: SurfSpot[] = [
     idealSwellDirs: [180, 210, 240],
     idealWindDirs: [30, 60, 90],
     idealTide: 'mid',
+    idealTideMovement: 'any',
     paddleDistance: 150,
     entryExitNotes: 'Rocky platform entry. Expert surfers only on bigger days.',
     seasonality: 'Autumn/winter SW-S swells',
@@ -93,7 +105,11 @@ export const surfSpots: SurfSpot[] = [
     easyEntry: false,
     shortPaddle: true,
     crowdFactor: 6,
-    skillLevel: 'expert'
+    skillLevel: 'expert',
+    parking: 'Use Bells Beach car park and walk down. No direct parking.',
+    facilities: ['None at break - use Bells facilities'],
+    localismLevel: 'heavy',
+    localismNotes: 'Very competitive lineup. Locals expect you to know what you are doing. Not for beginners or intermediates.'
   },
   {
     id: 'jan-juc',
@@ -107,6 +123,7 @@ export const surfSpots: SurfSpot[] = [
     idealSwellDirs: [180, 210, 240, 270],
     idealWindDirs: [30, 60, 90, 270],
     idealTide: 'any',
+    idealTideMovement: 'any',
     paddleDistance: 100,
     entryExitNotes: 'Sandy beach entry. Multiple peaks along the beach.',
     seasonality: 'Year-round, best with SW-W swells',
@@ -114,7 +131,11 @@ export const surfSpots: SurfSpot[] = [
     easyEntry: true,
     shortPaddle: true,
     crowdFactor: 7,
-    skillLevel: 'intermediate'
+    skillLevel: 'intermediate',
+    parking: 'Street parking along foreshore. Limited spots, arrive early on weekends.',
+    facilities: ['Surf club', 'Toilets', 'Showers', 'Cafe nearby', 'Skate park'],
+    localismLevel: 'moderate',
+    localismNotes: 'Friendly vibe generally. Can get testy when crowded. Give way to locals on set waves.'
   },
   {
     id: 'thirteenth-beach',
@@ -128,6 +149,7 @@ export const surfSpots: SurfSpot[] = [
     idealSwellDirs: [180, 210, 240],
     idealWindDirs: [270, 300, 330, 0],
     idealTide: 'mid',
+    idealTideMovement: 'incoming',
     paddleDistance: 80,
     entryExitNotes: 'Multiple peaks, more tolerant of onshore winds. Long beach walk.',
     seasonality: 'Good for onshore days elsewhere',
@@ -135,7 +157,11 @@ export const surfSpots: SurfSpot[] = [
     easyEntry: true,
     shortPaddle: true,
     crowdFactor: 3,
-    skillLevel: 'beginner'
+    skillLevel: 'beginner',
+    parking: 'Unsealed car park at end of road. Free. 4WD access along beach for members.',
+    facilities: ['Portable toilet (seasonal)', 'Golf club nearby'],
+    localismLevel: 'friendly',
+    localismNotes: 'Relaxed vibe due to multiple peaks. Plenty of room for everyone. Great learner spot.'
   },
   {
     id: 'torquay-front-beach',
@@ -149,6 +175,7 @@ export const surfSpots: SurfSpot[] = [
     idealSwellDirs: [180, 210, 240],
     idealWindDirs: [270, 300, 330, 0, 30],
     idealTide: 'any',
+    idealTideMovement: 'any',
     paddleDistance: 60,
     entryExitNotes: 'Easy beach entry near surf clubs. Protected bay location.',
     seasonality: 'Year-round, sheltered spot',
@@ -156,7 +183,11 @@ export const surfSpots: SurfSpot[] = [
     easyEntry: true,
     shortPaddle: true,
     crowdFactor: 8,
-    skillLevel: 'beginner'
+    skillLevel: 'beginner',
+    parking: 'Paid parking along esplanade. Free in back streets. Multi-story car park nearby.',
+    facilities: ['Multiple cafes', 'Surf shops', 'Toilets', 'Showers', 'Surf schools', 'Playground'],
+    localismLevel: 'friendly',
+    localismNotes: 'Tourist-friendly beach. No localism issues. Great for families and learners.'
   },
   {
     id: 'point-addis',
@@ -170,6 +201,7 @@ export const surfSpots: SurfSpot[] = [
     idealSwellDirs: [180, 210, 240],
     idealWindDirs: [0, 30, 60, 90],
     idealTide: 'mid',
+    idealTideMovement: 'outgoing',
     paddleDistance: 250,
     entryExitNotes: 'Rocky entry down cliff. Very long paddle. Check conditions carefully.',
     seasonality: 'Best in autumn/winter',
@@ -177,7 +209,11 @@ export const surfSpots: SurfSpot[] = [
     easyEntry: false,
     shortPaddle: false,
     crowdFactor: 4,
-    skillLevel: 'advanced'
+    skillLevel: 'advanced',
+    parking: 'Dirt car park at cliff top. Free. Nude beach below - be aware.',
+    facilities: ['None - bring everything you need'],
+    localismLevel: 'moderate',
+    localismNotes: 'Small crew of regulars. Respect the lineup and you will be fine. Long paddle filters crowds.'
   },
   {
     id: 'anglesea',
@@ -191,6 +227,7 @@ export const surfSpots: SurfSpot[] = [
     idealSwellDirs: [180, 210, 240],
     idealWindDirs: [270, 300, 330, 0, 30],
     idealTide: 'any',
+    idealTideMovement: 'outgoing',
     paddleDistance: 90,
     entryExitNotes: 'Sandy beach entry. Multiple peaks. River mouth can affect sandbars.',
     seasonality: 'Year-round',
@@ -198,7 +235,11 @@ export const surfSpots: SurfSpot[] = [
     easyEntry: true,
     shortPaddle: true,
     crowdFactor: 7,
-    skillLevel: 'intermediate'
+    skillLevel: 'intermediate',
+    parking: 'Large car park behind surf club. Street parking available. Free.',
+    facilities: ['Surf club', 'Pub', 'Cafes', 'Toilets', 'Showers', 'General store'],
+    localismLevel: 'moderate',
+    localismNotes: 'Family holiday town vibe. Generally friendly but busy in summer. Multiple peaks reduce tension.'
   },
   {
     id: 'fairhaven',
@@ -212,6 +253,7 @@ export const surfSpots: SurfSpot[] = [
     idealSwellDirs: [180, 210, 240],
     idealWindDirs: [270, 300, 330, 0, 30],
     idealTide: 'any',
+    idealTideMovement: 'any',
     paddleDistance: 70,
     entryExitNotes: 'Beautiful sandy beach. Easy entry. Less crowded than nearby spots.',
     seasonality: 'Year-round',
@@ -219,7 +261,11 @@ export const surfSpots: SurfSpot[] = [
     easyEntry: true,
     shortPaddle: true,
     crowdFactor: 4,
-    skillLevel: 'beginner'
+    skillLevel: 'beginner',
+    parking: 'Sealed car park behind dunes. Free. Fills up on summer weekends.',
+    facilities: ['Surf club', 'Toilets', 'BBQ area', 'Picnic tables'],
+    localismLevel: 'friendly',
+    localismNotes: 'Very welcoming spot. Good for families. SLSC runs nippers on weekends.'
   },
   {
     id: 'lorne',
@@ -233,6 +279,7 @@ export const surfSpots: SurfSpot[] = [
     idealSwellDirs: [180, 210, 240],
     idealWindDirs: [270, 300, 330, 0, 30],
     idealTide: 'mid',
+    idealTideMovement: 'incoming',
     paddleDistance: 100,
     entryExitNotes: 'Beach entry. Multiple peaks. Can get hollow on bigger swells.',
     seasonality: 'Year-round, best in winter',
@@ -240,7 +287,11 @@ export const surfSpots: SurfSpot[] = [
     easyEntry: true,
     shortPaddle: true,
     crowdFactor: 6,
-    skillLevel: 'intermediate'
+    skillLevel: 'intermediate',
+    parking: 'Paid parking in town. Free spots further back. Very busy in summer.',
+    facilities: ['Full town amenities', 'Multiple cafes', 'Pubs', 'Shops', 'Medical centre'],
+    localismLevel: 'moderate',
+    localismNotes: 'Tourist town with transient crowd. Generally friendly. Point breaks nearby have stronger localism.'
   },
   {
     id: 'johanna',
@@ -254,6 +305,7 @@ export const surfSpots: SurfSpot[] = [
     idealSwellDirs: [180, 210, 240, 270],
     idealWindDirs: [270, 300, 330, 0, 30, 60, 90],
     idealTide: 'any',
+    idealTideMovement: 'any',
     paddleDistance: 120,
     entryExitNotes: 'Exposed beach. Very powerful waves. For experienced surfers only.',
     seasonality: 'Year-round, often big',
@@ -261,7 +313,11 @@ export const surfSpots: SurfSpot[] = [
     easyEntry: true,
     shortPaddle: true,
     crowdFactor: 2,
-    skillLevel: 'advanced'
+    skillLevel: 'advanced',
+    parking: 'Dirt car park at beach access. Free. Can be boggy in winter.',
+    facilities: ['Camping nearby', 'No facilities at beach'],
+    localismLevel: 'friendly',
+    localismNotes: 'Remote location means only committed surfers make the drive. Respectful crew. Bring a buddy.'
   },
   {
     id: 'ocean-grove',
@@ -275,6 +331,7 @@ export const surfSpots: SurfSpot[] = [
     idealSwellDirs: [150, 180, 210],
     idealWindDirs: [270, 300, 330, 0],
     idealTide: 'any',
+    idealTideMovement: 'incoming',
     paddleDistance: 60,
     entryExitNotes: 'Easy sandy beach entry. Family-friendly. Protected from W winds.',
     seasonality: 'Year-round',
@@ -282,7 +339,11 @@ export const surfSpots: SurfSpot[] = [
     easyEntry: true,
     shortPaddle: true,
     crowdFactor: 6,
-    skillLevel: 'beginner'
+    skillLevel: 'beginner',
+    parking: 'Street parking along foreshore. Car parks at each end. Free.',
+    facilities: ['Cafes', 'Shops', 'Surf club', 'Toilets', 'Showers', 'Playground'],
+    localismLevel: 'friendly',
+    localismNotes: 'Family beach town. Very welcoming to all levels. Great for learners.'
   },
   {
     id: 'barwon-heads',
@@ -296,6 +357,7 @@ export const surfSpots: SurfSpot[] = [
     idealSwellDirs: [150, 180, 210],
     idealWindDirs: [270, 300, 330, 0],
     idealTide: 'mid',
+    idealTideMovement: 'slack',
     paddleDistance: 80,
     entryExitNotes: 'Sandy beach. River mouth affects conditions. Good for learners.',
     seasonality: 'Year-round, smaller waves',
@@ -303,7 +365,11 @@ export const surfSpots: SurfSpot[] = [
     easyEntry: true,
     shortPaddle: true,
     crowdFactor: 7,
-    skillLevel: 'beginner'
+    skillLevel: 'beginner',
+    parking: 'Car park near bridge. Street parking. Can be busy on weekends.',
+    facilities: ['Cafes', 'Pub', 'Toilets', 'Boat ramp nearby'],
+    localismLevel: 'friendly',
+    localismNotes: 'Chilled village vibe. Mix of SUPs, longboarders and shortboarders. Everyone gets along.'
   },
   {
     id: 'winki-pop-inside',
@@ -317,6 +383,7 @@ export const surfSpots: SurfSpot[] = [
     idealSwellDirs: [180, 210, 240],
     idealWindDirs: [30, 60, 90],
     idealTide: 'mid',
+    idealTideMovement: 'outgoing',
     paddleDistance: 120,
     entryExitNotes: 'Rocky entry. Shorter ride than outer Winki. Still requires skill.',
     seasonality: 'Autumn/winter',
@@ -324,7 +391,11 @@ export const surfSpots: SurfSpot[] = [
     easyEntry: false,
     shortPaddle: true,
     crowdFactor: 7,
-    skillLevel: 'advanced'
+    skillLevel: 'advanced',
+    parking: 'Use Bells Beach car park and walk.',
+    facilities: ['Use Bells facilities'],
+    localismLevel: 'heavy',
+    localismNotes: 'Same local crew as outer Winki. Know the rules before paddling out. Respect the pecking order.'
   }
 ];
 
