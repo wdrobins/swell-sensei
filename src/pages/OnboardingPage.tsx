@@ -20,7 +20,7 @@ const OnboardingPage: React.FC = () => {
   
   const [formData, setFormData] = useState({
     name: '',
-    age: '',
+    surfFrequency: '',
     yearsSurfing: '',
     comfortableWaveSize: '',
     experienceTypes: [] as string[],
@@ -31,6 +31,16 @@ const OnboardingPage: React.FC = () => {
     goals: [] as string[],
     homeRadius: 25
   });
+
+  const surfFrequencyOptions = [
+    'Daily',
+    'Weekly',
+    'A couple of times a month',
+    'Monthly',
+    'Every few months',
+    'A couple of times a year',
+    'Never'
+  ];
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
@@ -81,17 +91,23 @@ const OnboardingPage: React.FC = () => {
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="age">Age</Label>
-                  <Input
-                    id="age"
-                    type="number"
-                    value={formData.age}
-                    onChange={(e) => setFormData({...formData, age: e.target.value})}
-                    placeholder="25"
-                  />
+              <div>
+                <Label>How regularly do you surf?</Label>
+                <div className="grid grid-cols-2 gap-3 mt-2">
+                  {surfFrequencyOptions.map((frequency) => (
+                    <Button
+                      key={frequency}
+                      variant={formData.surfFrequency === frequency ? 'default' : 'outline'}
+                      onClick={() => setFormData({...formData, surfFrequency: frequency, yearsSurfing: frequency === 'Never' ? '' : formData.yearsSurfing})}
+                      className="text-sm h-auto py-2"
+                    >
+                      {frequency}
+                    </Button>
+                  ))}
                 </div>
+              </div>
+              
+              {formData.surfFrequency !== 'Never' && (
                 <div>
                   <Label htmlFor="years">Years surfing</Label>
                   <Input
@@ -102,7 +118,7 @@ const OnboardingPage: React.FC = () => {
                     placeholder="5"
                   />
                 </div>
-              </div>
+              )}
             </div>
           </div>
         );
