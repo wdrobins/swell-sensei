@@ -94,17 +94,24 @@ const OnboardingPage: React.FC = () => {
               <div>
                 <Label>How regularly do you surf?</Label>
                 <div className="grid grid-cols-2 gap-3 mt-2">
-                  {surfFrequencyOptions.map((frequency) => (
+                  {surfFrequencyOptions.filter(f => f !== 'Never').map((frequency) => (
                     <Button
                       key={frequency}
                       variant={formData.surfFrequency === frequency ? 'default' : 'outline'}
-                      onClick={() => setFormData({...formData, surfFrequency: frequency, yearsSurfing: frequency === 'Never' ? '' : formData.yearsSurfing})}
+                      onClick={() => setFormData({...formData, surfFrequency: frequency})}
                       className="text-sm h-auto py-2"
                     >
                       {frequency}
                     </Button>
                   ))}
                 </div>
+                <Button
+                  variant={formData.surfFrequency === 'Never' ? 'default' : 'outline'}
+                  onClick={() => setFormData({...formData, surfFrequency: 'Never', yearsSurfing: ''})}
+                  className="w-full text-sm h-auto py-2 mt-3"
+                >
+                  Never
+                </Button>
               </div>
               
               {formData.surfFrequency !== 'Never' && (
