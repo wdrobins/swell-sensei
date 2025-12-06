@@ -2,53 +2,59 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, MapPin, Waves, TrendingUp, UserPlus, Share2, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { Calendar, Clock, MapPin, Waves, TrendingUp, ChevronRight, Star, Info } from 'lucide-react';
 import { addDays, format, isToday, isTomorrow } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { surfSpots, mockSurferProfile, ForecastData } from '@/lib/mockData';
+import { calculateFitScore, FitScoreResult } from '@/lib/fitScoring';
 import { checkAndAwardMilestones } from '@/lib/milestoneUtils';
 
+interface TimeSlot {
+  time: string;
+  label: string;
+  hour: number;
+}
+
+interface SpotRecommendation {
+  spot: typeof surfSpots[0];
+  fitResult: FitScoreResult;
+  forecast: ForecastData;
+}
+
+const timeSlots: TimeSlot[] = [
+  { time: '6-8am', label: 'Dawn', hour: 6 },
+  { time: '8-10am', label: 'Morning', hour: 8 },
+  { time: '10am-12pm', label: 'Late Morning', hour: 10 },
+  { time: '12-2pm', label: 'Midday', hour: 12 },
+  { time: '2-4pm', label: 'Afternoon', hour: 14 },
+  { time: '4-6pm', label: 'Evening', hour: 16 },
+];
+
 const PlanPage: React.FC = () => {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [selectedSpots, setSelectedSpots] = useState<string[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTime, setSelectedTime] = useState<TimeSlot | null>(null);
+  const [recommendations, setRecommendations] = useState<SpotRecommendation[]>([]);
   const [isBooking, setIsBooking] = useState(false);
-  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-  const [expandedTimeSlot, setExpandedTimeSlot] = useState<string | null>(null);
-  const [showSkillComparison, setShowSkillComparison] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const allSurfSpots = [
-    'Jan Juc',
-    'Bells Beach',
-    '13th Beach',
-    'Torquay',
-    'Ocean Grove',
-    'Fairhaven',
-    'Lorne',
-    'Point Addis',
-    'Winki Pop'
+  // Generate mock weekly forecast scores
+  const weeklyForecast = [
+    { score: 75, conditions: '3-4ft Clean', quality: 'Good', swellHeight: 1.1, swellPeriod: 12, windSpeed: 12 },
+    { score: 85, conditions: '4-5ft Offshore', quality: 'Excellent', swellHeight: 1.4, swellPeriod: 14, windSpeed: 8 },
+    { score: 45, conditions: '2-3ft Onshore', quality: 'Fair', swellHeight: 0.8, swellPeriod: 9, windSpeed: 22 },
+    { score: 65, conditions: '3-4ft Cross', quality: 'Good', swellHeight: 1.0, swellPeriod: 11, windSpeed: 15 },
+    { score: 30, conditions: '1-2ft Messy', quality: 'Poor', swellHeight: 0.5, swellPeriod: 7, windSpeed: 28 },
+    { score: 70, conditions: '3-4ft Clean', quality: 'Good', swellHeight: 1.0, swellPeriod: 12, windSpeed: 10 },
+    { score: 80, conditions: '4-5ft Glass', quality: 'Excellent', swellHeight: 1.3, swellPeriod: 15, windSpeed: 5 }
   ];
 
-  // Fetch user profile with skill level
+  // Fetch user profile
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (!user) return;
@@ -59,9 +65,7 @@ const PlanPage: React.FC = () => {
         .eq('user_id', user.id)
         .single();
       
-      if (error) {
-        console.error('Error fetching profile:', error);
-      } else {
+      if (!error && data) {
         setUserProfile(data);
       }
     };
@@ -69,234 +73,59 @@ const PlanPage: React.FC = () => {
     fetchUserProfile();
   }, [user]);
 
-  const weeklyForecast = [
-    { score: 75, conditions: '2ft Clean', quality: 'Good' },
-    { score: 85, conditions: '3ft Offshore', quality: 'Excellent' },
-    { score: 45, conditions: '2ft Onshore', quality: 'Fair' },
-    { score: 65, conditions: '2-3ft Cross', quality: 'Good' },
-    { score: 30, conditions: '1ft Messy', quality: 'Poor' },
-    { score: 70, conditions: '2ft Clean', quality: 'Good' },
-    { score: 80, conditions: '3ft Glass', quality: 'Excellent' }
-  ];
-
-  const timeWindows = [
-    { 
-      time: '6-8am', 
-      label: 'Dawn', 
-      conditions: 'Light offshore winds',
-      spotScores: {
-        'Jan Juc': 85,
-        'Bells Beach': 82,
-        '13th Beach': 75,
-        'Torquay': 70,
-        'Ocean Grove': 65,
-        'Fairhaven': 60,
-        'Lorne': 58,
-        'Point Addis': 78,
-        'Winki Pop': 80
-      }
-    },
-    { 
-      time: '8-10am', 
-      label: 'Morning', 
-      conditions: 'Clean conditions',
-      spotScores: {
-        'Jan Juc': 78,
-        'Bells Beach': 76,
-        '13th Beach': 82,
-        'Torquay': 72,
-        'Ocean Grove': 68,
-        'Fairhaven': 65,
-        'Lorne': 62,
-        'Point Addis': 74,
-        'Winki Pop': 75
-      }
-    },
-    { 
-      time: '12-2pm', 
-      label: 'Midday', 
-      conditions: 'Moderate winds',
-      spotScores: {
-        'Jan Juc': 50,
-        'Bells Beach': 52,
-        '13th Beach': 48,
-        'Torquay': 58,
-        'Ocean Grove': 55,
-        'Fairhaven': 45,
-        'Lorne': 42,
-        'Point Addis': 48,
-        'Winki Pop': 50
-      }
-    },
-    { 
-      time: '2-4pm', 
-      label: 'Afternoon', 
-      conditions: 'Onshore building',
-      spotScores: {
-        'Jan Juc': 58,
-        'Bells Beach': 60,
-        '13th Beach': 65,
-        'Torquay': 55,
-        'Ocean Grove': 52,
-        'Fairhaven': 48,
-        'Lorne': 45,
-        'Point Addis': 62,
-        'Winki Pop': 58
-      }
-    },
-    { 
-      time: '4-6pm', 
-      label: 'Evening', 
-      conditions: 'Cross-shore winds',
-      spotScores: {
-        'Jan Juc': 62,
-        'Bells Beach': 65,
-        '13th Beach': 60,
-        'Torquay': 58,
-        'Ocean Grove': 55,
-        'Fairhaven': 70,
-        'Lorne': 68,
-        'Point Addis': 66,
-        'Winki Pop': 64
-      }
-    },
-  ];
-
-  const getTimeWindowScore = (window: typeof timeWindows[0]) => {
-    if (selectedSpots.length === 0) {
-      // If no spots selected, show average of all spots
-      const scores = Object.values(window.spotScores);
-      return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-    }
-    
-    // Calculate average score for selected spots
-    const selectedScores = selectedSpots.map(spot => window.spotScores[spot] || 0);
-    return Math.round(selectedScores.reduce((a, b) => a + b, 0) / selectedScores.length);
-  };
-
-  const getBestSpotsForWindow = (window: typeof timeWindows[0]) => {
-    if (selectedSpots.length === 0) {
-      // Show top 2 spots if no selection
-      return Object.entries(window.spotScores)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 2)
-        .map(([spot]) => spot);
-    }
-    
-    // Show selected spots sorted by score
-    return selectedSpots
-      .map(spot => ({ spot, score: window.spotScores[spot] || 0 }))
-      .sort((a, b) => b.score - a.score)
-      .map(({ spot }) => spot);
-  };
-
-  const skillLevelThresholds = {
-    beginner: { safe: 50, good: 40, stretch: 30 },
-    intermediate: { safe: 65, good: 55, stretch: 45 },
-    advanced: { safe: 75, good: 65, stretch: 55 },
-    expert: { safe: 80, good: 70, stretch: 60 }
-  };
-
-  const getRecommendationForSpot = (spotScore: number, skillLevel: string | null) => {
-    if (!skillLevel) {
-      return { text: 'Set your skill level in profile for personalized recommendations', color: 'text-muted-foreground' };
+  // Generate recommendations when date and time are selected
+  useEffect(() => {
+    if (!selectedDate || !selectedTime) {
+      setRecommendations([]);
+      return;
     }
 
-    const level = skillLevelThresholds[skillLevel as keyof typeof skillLevelThresholds] || skillLevelThresholds.intermediate;
+    const dayIndex = Math.min(
+      Math.floor((selectedDate.getTime() - new Date().setHours(0, 0, 0, 0)) / (1000 * 60 * 60 * 24)),
+      6
+    );
+    const dayForecast = weeklyForecast[dayIndex] || weeklyForecast[0];
 
-    if (spotScore >= level.safe) {
-      return { 
-        text: `Perfect for your ${skillLevel} level! Go for it!`, 
-        color: 'text-success',
-        icon: '✓'
+    // Adjust forecast based on time of day
+    const timeMultiplier = selectedTime.hour <= 8 ? 1.1 : selectedTime.hour >= 14 ? 0.85 : 1.0;
+    const windMultiplier = selectedTime.hour <= 8 ? 0.6 : selectedTime.hour >= 14 ? 1.4 : 1.0;
+
+    // Calculate fit scores for all spots
+    const spotScores: SpotRecommendation[] = surfSpots.map(spot => {
+      const forecast: ForecastData = {
+        timestamp: new Date().toISOString(),
+        swellHeight: dayForecast.swellHeight * timeMultiplier,
+        swellPeriod: dayForecast.swellPeriod,
+        swellDirection: 200 + Math.random() * 40, // SW-S swell
+        windSpeed: dayForecast.windSpeed * windMultiplier,
+        windDirection: selectedTime.hour <= 10 ? 30 : 180, // Offshore morning, onshore afternoon
+        tideLevel: 1.0 + Math.sin(selectedTime.hour / 6 * Math.PI) * 0.5, // Simulated tide
+        confidence: 0.85
       };
-    } else if (spotScore >= level.good) {
-      return { 
-        text: `Good conditions for your skill level`, 
-        color: 'text-accent',
-        icon: '→'
-      };
-    } else if (spotScore >= level.stretch) {
-      return { 
-        text: `Challenging - push your limits carefully`, 
-        color: 'text-warning',
-        icon: '!'
-      };
-    } else {
-      return { 
-        text: `Not recommended for ${skillLevel}s today`, 
-        color: 'text-destructive',
-        icon: '×'
-      };
-    }
-  };
 
-  const getRecommendationForSkillLevel = (spotScore: number, skillLevel: string) => {
-    const level = skillLevelThresholds[skillLevel as keyof typeof skillLevelThresholds];
-    
-    if (spotScore >= level.safe) {
-      return { rating: 'Perfect', color: 'text-success', bgColor: 'bg-success/10', badge: 'success' };
-    } else if (spotScore >= level.good) {
-      return { rating: 'Good', color: 'text-accent', bgColor: 'bg-accent/10', badge: 'accent' };
-    } else if (spotScore >= level.stretch) {
-      return { rating: 'Stretch', color: 'text-warning', bgColor: 'bg-warning/10', badge: 'warning' };
-    } else {
-      return { rating: 'Not Safe', color: 'text-destructive', bgColor: 'bg-destructive/10', badge: 'destructive' };
-    }
-  };
+      const fitResult = calculateFitScore(spot, forecast, mockSurferProfile);
+      return { spot, fitResult, forecast };
+    });
 
-  const toggleTimeSlot = (timeSlot: string) => {
-    setExpandedTimeSlot(expandedTimeSlot === timeSlot ? null : timeSlot);
-  };
+    // Sort by score and take top recommendations
+    const sorted = spotScores.sort((a, b) => b.fitResult.score - a.fitResult.score);
+    setRecommendations(sorted.slice(0, 5));
+  }, [selectedDate, selectedTime]);
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
-    setSelectedTime(null); // Reset time selection when date changes
+    setSelectedTime(null);
+    setRecommendations([]);
   };
 
-  const handleTimeSelect = (time: string) => {
-    setSelectedTime(time);
+  const handleTimeSelect = (slot: TimeSlot) => {
+    setSelectedTime(slot);
   };
 
-  const toggleSpot = (spot: string) => {
-    setSelectedSpots(prev => 
-      prev.includes(spot) 
-        ? prev.filter(s => s !== spot)
-        : [...prev, spot]
-    );
-  };
-
-  const handleInvite = () => {
-    const sessionDetails = `Join me for a surf session on ${format(selectedDate, 'EEEE, MMMM d, yyyy')} at ${selectedTime}!`;
-    const shareUrl = window.location.href;
-    
-    if (navigator.share) {
-      navigator.share({
-        title: 'Surf Session Invite',
-        text: sessionDetails,
-        url: shareUrl,
-      }).catch(() => {
-        // Fallback to clipboard
-        navigator.clipboard.writeText(`${sessionDetails}\n${shareUrl}`);
-        toast({
-          title: "Link copied!",
-          description: "Session details copied to clipboard.",
-        });
-      });
-    } else {
-      navigator.clipboard.writeText(`${sessionDetails}\n${shareUrl}`);
-      toast({
-        title: "Link copied!",
-        description: "Session details copied to clipboard.",
-      });
-    }
-    setInviteDialogOpen(false);
-  };
-
-  const handleBookSession = async () => {
+  const handleBookSession = async (recommendation: SpotRecommendation) => {
     if (!user) {
       toast({
-        title: "Authentication required",
+        title: "Sign in required",
         description: "Please sign in to book a session.",
         variant: "destructive"
       });
@@ -304,30 +133,25 @@ const PlanPage: React.FC = () => {
       return;
     }
 
-    if (!selectedTime) return;
+    if (!selectedDate || !selectedTime) return;
 
     setIsBooking(true);
 
     try {
-      // Find the selected time window details
-      const selectedWindow = timeWindows.find(w => w.time === selectedTime);
       const dateStr = format(selectedDate, 'EEEE, MMMM d, yyyy');
-      const windowScore = selectedWindow ? getTimeWindowScore(selectedWindow) : 0;
-      const bestSpots = selectedWindow ? getBestSpotsForWindow(selectedWindow) : [];
       
-      // Create session data
       const sessionData = {
         user_id: user.id,
-        title: `Surf Session - ${dateStr} at ${selectedTime}`,
-        description: `Planned session for ${selectedWindow?.label || 'surf session'}. Conditions: ${selectedWindow?.conditions || 'TBD'}`,
+        title: `${recommendation.spot.name} - ${dateStr} at ${selectedTime.time}`,
+        description: `Fit Score: ${recommendation.fitResult.score} (${recommendation.fitResult.label}). ${recommendation.fitResult.coachingTip}`,
         spot_preferences: {
           date: selectedDate.toISOString(),
-          time: selectedTime,
-          timeLabel: selectedWindow?.label,
-          spots: bestSpots,
-          selectedSpots: selectedSpots.length > 0 ? selectedSpots : bestSpots,
-          score: windowScore,
-          conditions: selectedWindow?.conditions || ''
+          time: selectedTime.time,
+          timeLabel: selectedTime.label,
+          spotId: recommendation.spot.id,
+          spotName: recommendation.spot.name,
+          score: recommendation.fitResult.score,
+          conditions: `${(recommendation.forecast.swellHeight * 3.28).toFixed(0)}ft @ ${recommendation.forecast.swellPeriod}s`
         }
       };
 
@@ -339,7 +163,7 @@ const PlanPage: React.FC = () => {
 
       toast({
         title: "Session booked!",
-        description: `Your surf session for ${dateStr} at ${selectedTime} has been saved.`,
+        description: `Your session at ${recommendation.spot.name} for ${dateStr} at ${selectedTime.time} has been saved.`,
       });
 
       // Check for milestones
@@ -364,11 +188,7 @@ const PlanPage: React.FC = () => {
         }
       }
 
-      // Navigate to logs page after short delay
-      setTimeout(() => {
-        navigate('/logs');
-      }, 2000);
-
+      setTimeout(() => navigate('/logs'), 2000);
     } catch (error) {
       console.error('Error booking session:', error);
       toast({
@@ -381,6 +201,20 @@ const PlanPage: React.FC = () => {
     }
   };
 
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'text-success';
+    if (score >= 60) return 'text-accent';
+    if (score >= 40) return 'text-warning';
+    return 'text-destructive';
+  };
+
+  const getWaveHeightRange = (meters: number): string => {
+    const feet = meters * 3.28084;
+    const low = Math.max(0, feet - 0.5).toFixed(0);
+    const high = (feet + 0.5).toFixed(0);
+    return `${low}-${high}`;
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
@@ -389,56 +223,21 @@ const PlanPage: React.FC = () => {
           Plan Your Session
         </h1>
         <p className="text-muted-foreground">
-          Select your preferred surf spots, then choose a date and time
+          Select a day and time, and we'll recommend the best spot for you
         </p>
       </div>
 
-      {/* Surf Spot Selection - Now at the top */}
-      <Card className="mb-6 shadow-float">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-accent" />
-            Select Your Preferred Surf Spots
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            Choose the surf spots you'd like to consider - time slot ratings will update based on your selection
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {allSurfSpots.map((spot) => (
-              <button
-                key={spot}
-                onClick={() => toggleSpot(spot)}
-                className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${
-                  selectedSpots.includes(spot)
-                    ? 'border-primary bg-primary/10 text-primary font-semibold'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  <span className="text-sm">{spot}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-          {selectedSpots.length > 0 && (
-            <div className="mt-4 p-3 bg-primary/5 rounded-lg">
-              <p className="text-sm font-medium">
-                Selected: {selectedSpots.join(', ')}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Weekly Outlook */}
+      {/* Step 1: Select Day */}
       <Card className="mb-6 shadow-float bg-gradient-to-r from-primary/5 to-accent/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            This Week's Forecast - Select Your Day
+            <Calendar className="h-5 w-5 text-primary" />
+            Step 1: Choose Your Day
+            {selectedDate && (
+              <Badge variant="success" className="ml-auto">
+                {isToday(selectedDate) ? 'Today' : isTomorrow(selectedDate) ? 'Tomorrow' : format(selectedDate, 'EEE, MMM d')}
+              </Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -451,7 +250,7 @@ const PlanPage: React.FC = () => {
                   ? 'Tomorrow' 
                   : format(date, 'EEE');
               const dateStr = format(date, 'MMM d');
-              const isSelected = format(selectedDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
+              const isSelected = selectedDate && format(selectedDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
               
               return (
                 <button
@@ -460,16 +259,13 @@ const PlanPage: React.FC = () => {
                   className={`text-center p-4 rounded-lg transition-all hover:scale-105 cursor-pointer ${
                     isSelected 
                       ? 'bg-primary text-primary-foreground shadow-lg ring-2 ring-primary' 
-                      : 'bg-background/50 hover:bg-background'
+                      : 'bg-background/50 hover:bg-background border border-border/50'
                   }`}
                 >
                   <div className="text-sm font-medium mb-1">{dayName}</div>
                   <div className="text-xs mb-2 opacity-80">{dateStr}</div>
                   <div className={`text-2xl font-bold mb-1 ${
-                    isSelected ? '' :
-                    day.score >= 80 ? 'text-success' :
-                    day.score >= 60 ? 'text-accent' :
-                    day.score >= 40 ? 'text-warning' : 'text-muted-foreground'
+                    isSelected ? '' : getScoreColor(day.score)
                   }`}>
                     {day.score}
                   </div>
@@ -479,403 +275,165 @@ const PlanPage: React.FC = () => {
               );
             })}
           </div>
-          <div className="mt-4 pt-4 border-t text-center">
-            <p className="text-sm text-muted-foreground">
-              {(() => {
-                const bestDayIndex = weeklyForecast.findIndex(d => d.score === Math.max(...weeklyForecast.map(day => day.score)));
-                const bestDate = addDays(new Date(), bestDayIndex);
-                const bestDayName = isToday(bestDate) 
-                  ? 'Today' 
-                  : isTomorrow(bestDate) 
-                    ? 'Tomorrow' 
-                    : format(bestDate, 'EEEE');
-                return `${bestDayName} looks like the best day this week! Plan ahead for optimal conditions.`;
-              })()}
-            </p>
-          </div>
         </CardContent>
       </Card>
 
-      {/* Selected Date Display */}
-      <Card className="mb-6 shadow-float">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-accent" />
-              {format(selectedDate, 'EEEE, MMMM d, yyyy')}
-            </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowSkillComparison(!showSkillComparison)}
-            >
-              <TrendingUp className="h-4 w-4 mr-2" />
-              {showSkillComparison ? 'Hide' : 'Show'} Skill Comparison
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            {showSkillComparison 
-              ? 'View how different skill levels rate the same conditions to understand your progression path'
-              : 'Select your preferred time slot below to book your surf session'}
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Skill Level Comparison View */}
-      {showSkillComparison && selectedSpots.length > 0 && (
-        <Card className="mb-6 shadow-float bg-gradient-to-r from-primary/5 to-accent/5">
+      {/* Step 2: Select Time */}
+      {selectedDate && (
+        <Card className="mb-6 shadow-float animate-fade-in">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              Skill Level Progression Comparison
+              <Clock className="h-5 w-5 text-accent" />
+              Step 2: Choose Your Time
+              {selectedTime && (
+                <Badge variant="accent" className="ml-auto">
+                  {selectedTime.label} ({selectedTime.time})
+                </Badge>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-6">
-              See how the same conditions are rated across all skill levels. This helps you understand what conditions you will be comfortable with as you progress.
-            </p>
-            
-            <div className="space-y-6">
-              {timeWindows.map((window) => {
-                const score = getTimeWindowScore(window);
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              {timeSlots.map((slot) => {
+                const isSelected = selectedTime?.time === slot.time;
+                const isMorning = slot.hour <= 10;
                 
                 return (
-                  <div key={window.time} className="border rounded-lg p-4 bg-background">
-                    <div className="flex items-center justify-between mb-4 pb-3 border-b">
-                      <div>
-                        <h3 className="font-semibold text-lg">{window.label}</h3>
-                        <p className="text-sm text-muted-foreground">{window.time}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold">{score}</div>
-                        <p className="text-xs text-muted-foreground">Average Score</p>
-                      </div>
-                    </div>
-
-                    {/* Comparison Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                      {(['beginner', 'intermediate', 'advanced', 'expert'] as const).map((level) => {
-                        const spotRatings = selectedSpots.map(spot => {
-                          const spotScore = window.spotScores[spot] || 0;
-                          return getRecommendationForSkillLevel(spotScore, level);
-                        });
-                        
-                        // Calculate average rating for this skill level
-                        const avgRating = spotRatings.filter(r => r.rating === 'Perfect').length / spotRatings.length;
-                        const isCurrentLevel = userProfile?.skill_level === level;
-                        
-                        return (
-                          <div 
-                            key={level}
-                            className={`p-3 rounded-lg border-2 transition-all ${
-                              isCurrentLevel 
-                                ? 'border-primary bg-primary/10 ring-2 ring-primary/20' 
-                                : 'border-border'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <h4 className="font-semibold capitalize text-sm">
-                                {level}
-                                {isCurrentLevel && (
-                                  <Badge variant="default" className="ml-2 text-xs">You</Badge>
-                                )}
-                              </h4>
-                            </div>
-                            
-                            <div className="space-y-1">
-                              {selectedSpots.map((spot, idx) => {
-                                const spotScore = window.spotScores[spot] || 0;
-                                const rec = getRecommendationForSkillLevel(spotScore, level);
-                                
-                                return (
-                                  <div 
-                                    key={spot}
-                                    className={`text-xs p-2 rounded ${rec.bgColor}`}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <span className="font-medium truncate">{spot}</span>
-                                      <Badge 
-                                        variant={rec.badge as any}
-                                        className="text-xs ml-1"
-                                      >
-                                        {rec.rating}
-                                      </Badge>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                            
-                            <div className="mt-3 pt-2 border-t">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground">Overall:</span>
-                                <span className="font-semibold">
-                                  {avgRating >= 0.7 ? '🟢 Great' :
-                                   avgRating >= 0.4 ? '🟡 Decent' :
-                                   avgRating >= 0.2 ? '🟠 Challenging' : '🔴 Risky'}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Progression Insight */}
-                    {userProfile?.skill_level && (
-                      <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
-                        <p className="text-sm">
-                          <strong>💡 Progression Tip:</strong> {
-                            userProfile.skill_level === 'beginner' 
-                              ? 'Focus on spots rated "Perfect" for beginners. As you gain confidence, spots rated "Good" for intermediates will become your next challenge.'
-                              : userProfile.skill_level === 'intermediate'
-                              ? 'You can handle most beginner-friendly conditions. Start exploring spots rated "Good" or "Perfect" for advanced surfers to push your skills.'
-                              : userProfile.skill_level === 'advanced'
-                              ? 'You have solid skills! Challenge yourself with expert-rated spots on good days, but always respect the ocean.'
-                              : 'As an expert, you can handle most conditions, but always assess risk and never surf alone in challenging spots.'
-                          }
-                        </p>
-                      </div>
+                  <button
+                    key={slot.time}
+                    onClick={() => handleTimeSelect(slot)}
+                    className={`text-center p-4 rounded-lg transition-all hover:scale-105 ${
+                      isSelected 
+                        ? 'bg-accent text-accent-foreground shadow-lg ring-2 ring-accent' 
+                        : 'bg-background/50 hover:bg-background border border-border/50'
+                    }`}
+                  >
+                    <div className="text-sm font-medium mb-1">{slot.label}</div>
+                    <div className="text-lg font-semibold">{slot.time}</div>
+                    {isMorning && !isSelected && (
+                      <div className="text-xs text-success mt-1">Best winds</div>
                     )}
-                  </div>
+                  </button>
                 );
               })}
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Time Window Selection */}
-      <Card className="mb-6 shadow-float">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Available Time Slots
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {timeWindows.map((window, index) => {
-              const isSelected = selectedTime === window.time;
-              const isExpanded = expandedTimeSlot === window.time;
-              const score = getTimeWindowScore(window);
-              const bestSpots = getBestSpotsForWindow(window);
-              
-              return (
-                <Collapsible
-                  key={index}
-                  open={isExpanded}
-                  onOpenChange={() => toggleTimeSlot(window.time)}
-                >
-                  <div
-                    className={`w-full rounded-lg border-2 transition-all ${
-                      isSelected 
-                        ? 'border-primary bg-primary/5' 
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                  >
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <Clock className="h-5 w-5 text-accent" />
-                          <div>
-                            <div className="font-semibold">{window.label}</div>
-                            <div className="text-sm text-muted-foreground">{window.time}</div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <div className="text-2xl font-bold text-foreground">{score}</div>
-                            <Badge variant={
-                              score >= 80 ? 'success' :
-                              score >= 60 ? 'accent' :
-                              score >= 40 ? 'warning' : 'destructive'
-                            }>
-                              {score >= 80 ? 'Safe' :
-                               score >= 60 ? 'Good' :
-                               score >= 40 ? 'Stretch' : 'No-Go'}
-                            </Badge>
-                          </div>
-                          <CollapsibleTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                            </Button>
-                          </CollapsibleTrigger>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 pt-3 border-t">
-                        <div>
-                          <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                            {selectedSpots.length > 0 ? 'Your Spots' : 'Best Spots'}
-                          </h4>
-                          <div className="flex flex-wrap gap-1">
-                            {bestSpots.map((spot, spotIndex) => (
-                              <Badge key={spotIndex} variant="secondary" className="text-xs">
-                                {spot}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                            Conditions
-                          </h4>
-                          <div className="flex items-center gap-2">
-                            <Waves className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-sm">{window.conditions}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <CollapsibleContent>
-                      <div className="px-4 pb-4 border-t">
-                        <div className="pt-4 space-y-3">
-                          <div className="flex items-center gap-2 mb-3">
-                            <Info className="h-4 w-4 text-primary" />
-                            <h4 className="font-semibold text-sm">
-                              Individual Spot Ratings {userProfile?.skill_level && `(${userProfile.skill_level})`}
-                            </h4>
-                          </div>
-                          
-                          {selectedSpots.length === 0 ? (
-                            <p className="text-sm text-muted-foreground italic">
-                              Select surf spots above to see personalized ratings and recommendations
-                            </p>
-                          ) : (
-                            <div className="space-y-2">
-                              {selectedSpots.map((spot) => {
-                                const spotScore = window.spotScores[spot] || 0;
-                                const recommendation = getRecommendationForSpot(spotScore, userProfile?.skill_level);
-                                
-                                return (
-                                  <div key={spot} className="p-3 rounded-lg bg-background border">
-                                    <div className="flex items-center justify-between mb-2">
-                                      <div className="flex items-center gap-2">
-                                        <MapPin className="h-4 w-4 text-accent" />
-                                        <span className="font-medium">{spot}</span>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-2xl font-bold">{spotScore}</span>
-                                        <Badge 
-                                          variant={
-                                            spotScore >= 80 ? 'success' :
-                                            spotScore >= 60 ? 'accent' :
-                                            spotScore >= 40 ? 'warning' : 'destructive'
-                                          }
-                                          className="text-xs"
-                                        >
-                                          {spotScore >= 80 ? 'Excellent' :
-                                           spotScore >= 60 ? 'Good' :
-                                           spotScore >= 40 ? 'Fair' : 'Poor'}
-                                        </Badge>
-                                      </div>
-                                    </div>
-                                    <div className={`text-sm flex items-center gap-2 ${recommendation.color}`}>
-                                      <span className="font-bold">{recommendation.icon}</span>
-                                      <span>{recommendation.text}</span>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                          
-                          <Button
-                            onClick={() => handleTimeSelect(window.time)}
-                            className="w-full mt-3"
-                            variant={isSelected ? "default" : "outline"}
-                          >
-                            {isSelected ? 'Selected' : 'Select This Time'}
-                          </Button>
-                        </div>
-                      </div>
-                    </CollapsibleContent>
-                  </div>
-                </Collapsible>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Book Session & Invite Buttons */}
-      {selectedTime && (
-        <Card className="mb-6 shadow-float bg-gradient-to-r from-success/10 to-accent/10 border-success/20">
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold mb-1">Ready to book your session?</h3>
-                <p className="text-sm text-muted-foreground">
-                  {format(selectedDate, 'EEEE, MMMM d')} at {selectedTime}
-                  {selectedSpots.length > 0 && ` • ${selectedSpots.length} spot${selectedSpots.length > 1 ? 's' : ''} selected`}
-                </p>
-              </div>
-              <div className="flex gap-3 w-full md:w-auto">
-                <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      size="lg" 
-                      variant="outline"
-                      className="flex-1 md:flex-none"
-                    >
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Invite Someone
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Invite Someone to Join</DialogTitle>
-                      <DialogDescription>
-                        Share this session with your surf buddies!
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="p-4 bg-muted rounded-lg">
-                        <p className="text-sm font-medium mb-2">Session Details:</p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(selectedDate, 'EEEE, MMMM d, yyyy')} at {selectedTime}
-                        </p>
-                        {selectedSpots.length > 0 && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Spots: {selectedSpots.join(', ')}
-                          </p>
-                        )}
-                      </div>
-                      <Button onClick={handleInvite} className="w-full">
-                        <Share2 className="h-4 w-4 mr-2" />
-                        Share Session
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-                
-                <Button 
-                  size="lg" 
-                  onClick={handleBookSession}
-                  disabled={isBooking}
-                  className="flex-1 md:flex-none"
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  {isBooking ? 'Booking...' : 'Book Session'}
-                </Button>
-              </div>
+            <div className="mt-4 p-3 bg-muted/50 rounded-lg flex items-start gap-2">
+              <Info className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-muted-foreground">
+                Morning sessions (6-10am) typically have the best conditions with lighter offshore winds.
+              </p>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Safety Footer */}
-      <div className="mt-12 p-4 bg-warning/10 border border-warning/30 rounded-lg">
-        <p className="text-sm text-warning-foreground text-center">
-          <strong>Safety Disclaimer:</strong> Conditions change quickly. Local knowledge beats apps. 
-          Never surf alone. This tool does not guarantee safety.
-        </p>
-      </div>
+      {/* Step 3: Recommendations */}
+      {recommendations.length > 0 && (
+        <Card className="shadow-float animate-fade-in">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Star className="h-5 w-5 text-warning" />
+              Recommended Spots for {selectedTime?.label}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recommendations.map((rec, index) => (
+                <div
+                  key={rec.spot.id}
+                  className={`p-4 rounded-lg border transition-all hover:shadow-md ${
+                    index === 0 
+                      ? 'bg-gradient-to-r from-success/10 to-accent/10 border-success/30' 
+                      : 'bg-background/50 border-border/50'
+                  }`}
+                >
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        {index === 0 && (
+                          <Badge variant="success" className="text-xs">
+                            Top Pick
+                          </Badge>
+                        )}
+                        <h3 className="text-lg font-semibold">{rec.spot.name}</h3>
+                        <Badge 
+                          variant={rec.fitResult.color as any}
+                          className="text-xs"
+                        >
+                          {rec.fitResult.label}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {rec.spot.region}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Waves className="h-3 w-3" />
+                          {getWaveHeightRange(rec.forecast.swellHeight)}ft @ {rec.forecast.swellPeriod}s
+                        </span>
+                        <span className="capitalize">{rec.spot.breakType}</span>
+                      </div>
+                      
+                      <p className="text-sm text-muted-foreground">
+                        {rec.fitResult.coachingTip}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="text-center">
+                        <div className={`text-3xl font-bold ${getScoreColor(rec.fitResult.score)}`}>
+                          {rec.fitResult.score}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Fit Score</div>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          onClick={() => handleBookSession(rec)}
+                          disabled={isBooking}
+                          size="sm"
+                          className="bg-gradient-ocean hover:opacity-90"
+                        >
+                          {isBooking ? 'Booking...' : 'Book Session'}
+                        </Button>
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                        >
+                          <Link to={`/spots/${rec.spot.id}`}>
+                            View Details
+                            <ChevronRight className="h-4 w-4 ml-1" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Empty State */}
+      {!selectedDate && (
+        <div className="text-center py-12 text-muted-foreground">
+          <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p className="text-lg">Select a day above to get started</p>
+          <p className="text-sm">We'll find the best spot for your session</p>
+        </div>
+      )}
+
+      {selectedDate && !selectedTime && (
+        <div className="text-center py-12 text-muted-foreground">
+          <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p className="text-lg">Now choose your preferred time</p>
+          <p className="text-sm">Morning sessions typically have better conditions</p>
+        </div>
+      )}
     </div>
   );
 };
