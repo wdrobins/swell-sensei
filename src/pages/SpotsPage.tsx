@@ -3,19 +3,54 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Slider } from '@/components/ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import SpotCard from '@/components/SpotCard';
 import { surfSpots, mockForecast, mockSurferProfile, ForecastData } from '@/lib/mockData';
 import { calculateFitScore } from '@/lib/fitScoring';
 import { useMultipleSpotForecasts } from '@/hooks/useMarineForecast';
-import { Search, Filter, Cloud } from 'lucide-react';
+import { calculateDistance, homeLocations } from '@/lib/compassUtils';
+import { Search, Filter, Cloud, MapPin, Navigation } from 'lucide-react';
 
 const SpotsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = React.useState('');
-  
-  const filteredSpots = surfSpots.filter(spot => 
-    spot.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    spot.region.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const [homeLocation, setHomeLocation] = React.useState<string>('Melbourne CBD');
+  const [maxDistance, setMaxDistance] = React.useState<number>(100);
+  const [filterByDistance, setFilterByDistance] = React.useState<boolean>(false);
+  const [skillFilter, setSkillFilter] = React.useState<string>('all');
+  const [lifeguardedOnly, setLifeguardedOnly] = React.useState<boolean>(false);
+
+  // Get home coordinates
+  const homeCoords = homeLocations[homeLocation] || homeLocations['Melbourne CBD'];
+
+  // Calculate distances and filter spots
+  const spotsWithDistance = surfSpots.map(spot => {
+    const distance = calculateDistance(
+      homeCoords[0], homeCoords[1],
+      spot.coordinates[0], spot.coordinates[1]
+    );
+    return { ...spot, distance };
+  });
+
+  const filteredSpots = spotsWithDistance.filter(spot => {
+    // Search filter
+    const matchesSearch = 
+      spot.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      spot.region.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Distance filter
+    const matchesDistance = !filterByDistance || spot.distance <= maxDistance;
+    
+    // Skill filter
+    const matchesSkill = skillFilter === 'all' || spot.skillLevel === skillFilter;
+    
+    // Lifeguarded filter
+    const matchesLifeguard = !lifeguardedOnly || spot.lifeguarded;
+    
+    return matchesSearch && matchesDistance && matchesSkill && matchesLifeguard;
+  });
 
   // Fetch real forecast data for all spots
   const { data: forecastData, isLoading } = useMultipleSpotForecasts(
@@ -55,6 +90,7 @@ const SpotsPage: React.FC = () => {
     
     return {
       spot,
+      distance: spot.distance,
       fitScore: result?.score,
       fitLabel: result?.label,
       isRealData: !!realForecast
@@ -93,31 +129,122 @@ const SpotsPage: React.FC = () => {
             Filter & Search
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search spots by name or region..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+        <CardContent className="space-y-6">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search spots by name or region..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          {/* Proximity Filter */}
+          <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Navigation className="h-4 w-4 text-primary" />
+                <Label htmlFor="proximity-filter" className="font-medium">Filter by proximity</Label>
+              </div>
+              <Switch
+                id="proximity-filter"
+                checked={filterByDistance}
+                onCheckedChange={setFilterByDistance}
               />
             </div>
-            <div className="flex gap-2">
-              <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80">
-                All Levels
-              </Badge>
-              <Badge variant="success" className="cursor-pointer hover:bg-success/80">
-                Beginner Friendly
-              </Badge>
-              <Badge variant="accent" className="cursor-pointer hover:bg-accent/80">
-                Lifeguarded
-              </Badge>
-            </div>
+            
+            {filterByDistance && (
+              <div className="space-y-4 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      Your location
+                    </Label>
+                    <Select value={homeLocation} onValueChange={setHomeLocation}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.keys(homeLocations).map(location => (
+                          <SelectItem key={location} value={location}>
+                            {location}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm">
+                      Max distance: <span className="font-bold text-primary">{maxDistance}km</span>
+                    </Label>
+                    <Slider
+                      value={[maxDistance]}
+                      onValueChange={(value) => setMaxDistance(value[0])}
+                      min={10}
+                      max={200}
+                      step={10}
+                      className="py-2"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>10km</span>
+                      <span>200km</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Filters */}
+          <div className="flex flex-wrap gap-2">
+            <Badge 
+              variant={skillFilter === 'all' ? 'default' : 'secondary'} 
+              className="cursor-pointer hover:opacity-80"
+              onClick={() => setSkillFilter('all')}
+            >
+              All Levels
+            </Badge>
+            <Badge 
+              variant={skillFilter === 'beginner' ? 'success' : 'secondary'} 
+              className="cursor-pointer hover:opacity-80"
+              onClick={() => setSkillFilter(skillFilter === 'beginner' ? 'all' : 'beginner')}
+            >
+              Beginner Friendly
+            </Badge>
+            <Badge 
+              variant={skillFilter === 'intermediate' ? 'accent' : 'secondary'} 
+              className="cursor-pointer hover:opacity-80"
+              onClick={() => setSkillFilter(skillFilter === 'intermediate' ? 'all' : 'intermediate')}
+            >
+              Intermediate
+            </Badge>
+            <Badge 
+              variant={skillFilter === 'advanced' ? 'warning' : 'secondary'} 
+              className="cursor-pointer hover:opacity-80"
+              onClick={() => setSkillFilter(skillFilter === 'advanced' ? 'all' : 'advanced')}
+            >
+              Advanced
+            </Badge>
+            <Badge 
+              variant={lifeguardedOnly ? 'success' : 'secondary'} 
+              className="cursor-pointer hover:opacity-80"
+              onClick={() => setLifeguardedOnly(!lifeguardedOnly)}
+            >
+              🏊 Lifeguarded Only
+            </Badge>
           </div>
         </CardContent>
       </Card>
+
+      {/* Results count */}
+      <div className="mb-4 text-sm text-muted-foreground">
+        Showing {spotsWithScores.length} of {surfSpots.length} spots
+        {filterByDistance && ` within ${maxDistance}km of ${homeLocation}`}
+      </div>
 
       {/* Spots Grid */}
       {isLoading ? (
@@ -135,14 +262,24 @@ const SpotsPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {spotsWithScores.map(({ spot, fitScore, fitLabel }) => (
-            <SpotCard
-              key={spot.id}
-              spot={spot}
-              fitScore={fitScore}
-              fitLabel={fitLabel}
-              showFitScore={true}
-            />
+          {spotsWithScores.map(({ spot, distance, fitScore, fitLabel }) => (
+            <div key={spot.id} className="relative">
+              {filterByDistance && (
+                <Badge 
+                  variant="outline" 
+                  className="absolute top-2 right-2 z-10 bg-background/90 backdrop-blur-sm"
+                >
+                  <MapPin className="h-3 w-3 mr-1" />
+                  {Math.round(distance)}km
+                </Badge>
+              )}
+              <SpotCard
+                spot={spot}
+                fitScore={fitScore}
+                fitLabel={fitLabel}
+                showFitScore={true}
+              />
+            </div>
           ))}
         </div>
       )}
@@ -150,7 +287,8 @@ const SpotsPage: React.FC = () => {
       {filteredSpots.length === 0 && (
         <div className="text-center py-12">
           <p className="text-muted-foreground">
-            No spots found matching your search criteria.
+            No spots found matching your criteria.
+            {filterByDistance && ' Try increasing your max distance.'}
           </p>
         </div>
       )}
