@@ -8,9 +8,11 @@ import FitScoreCard from '@/components/FitScoreCard';
 import { surfSpots, mockForecast, mockSurferProfile, ForecastData } from '@/lib/mockData';
 import { calculateFitScore } from '@/lib/fitScoring';
 import { useMarineForecast } from '@/hooks/useMarineForecast';
+import { degreesArrayToCompass, getTideMovementDescription, getLocalismColor } from '@/lib/compassUtils';
 import { 
   ArrowLeft, MapPin, Waves, Wind, Compass, Clock, 
-  AlertTriangle, Users, Shield, CheckCircle2, Cloud 
+  AlertTriangle, Users, Shield, CheckCircle2, Cloud,
+  Car, Coffee, ArrowUpDown
 } from 'lucide-react';
 
 const SpotDetailPage: React.FC = () => {
@@ -180,7 +182,7 @@ const SpotDetailPage: React.FC = () => {
                 <div className="flex items-center gap-1 mt-1">
                   <Compass className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">
-                    {spot.idealSwellDirs.join('°, ')}°
+                    {degreesArrayToCompass(spot.idealSwellDirs)}
                   </span>
                 </div>
               </div>
@@ -189,7 +191,7 @@ const SpotDetailPage: React.FC = () => {
                 <div className="flex items-center gap-1 mt-1">
                   <Wind className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">
-                    {spot.idealWindDirs.join('°, ')}°
+                    {degreesArrayToCompass(spot.idealWindDirs)}
                   </span>
                 </div>
               </div>
@@ -198,6 +200,15 @@ const SpotDetailPage: React.FC = () => {
                 <div className="flex items-center gap-1 mt-1">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium capitalize">{spot.idealTide}</span>
+                </div>
+              </div>
+              <div>
+                <span className="text-muted-foreground text-sm">Tide Movement:</span>
+                <div className="flex items-center gap-1 mt-1">
+                  <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">
+                    {getTideMovementDescription(spot.idealTideMovement)}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -258,20 +269,67 @@ const SpotDetailPage: React.FC = () => {
           </Card>
         </div>
 
-        {/* Entry/Exit Notes - Full width */}
+        {/* Local Knowledge - Full width */}
         <div className="lg:col-span-3">
           <Card className="shadow-float">
             <CardHeader>
               <CardTitle>Local Knowledge</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h4 className="font-medium mb-2">Entry & Exit</h4>
-                <p className="text-sm text-muted-foreground">{spot.entryExitNotes}</p>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Entry & Exit */}
+                <div>
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <Waves className="h-4 w-4 text-accent" />
+                    Entry & Exit
+                  </h4>
+                  <p className="text-sm text-muted-foreground">{spot.entryExitNotes}</p>
+                </div>
+                
+                {/* Seasonality */}
+                <div>
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-primary" />
+                    Seasonality
+                  </h4>
+                  <p className="text-sm text-muted-foreground">{spot.seasonality}</p>
+                </div>
+                
+                {/* Parking */}
+                <div>
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <Car className="h-4 w-4 text-muted-foreground" />
+                    Parking
+                  </h4>
+                  <p className="text-sm text-muted-foreground">{spot.parking}</p>
+                </div>
+                
+                {/* Facilities */}
+                <div>
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <Coffee className="h-4 w-4 text-muted-foreground" />
+                    Nearby Facilities
+                  </h4>
+                  <div className="flex flex-wrap gap-1">
+                    {spot.facilities.map((facility, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {facility}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div>
-                <h4 className="font-medium mb-2">Seasonality</h4>
-                <p className="text-sm text-muted-foreground">{spot.seasonality}</p>
+              
+              {/* Localism */}
+              <div className="border-t pt-4">
+                <h4 className="font-medium mb-2 flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Localism Level
+                  <Badge variant={getLocalismColor(spot.localismLevel) as any} className="capitalize">
+                    {spot.localismLevel}
+                  </Badge>
+                </h4>
+                <p className="text-sm text-muted-foreground">{spot.localismNotes}</p>
               </div>
             </CardContent>
           </Card>
