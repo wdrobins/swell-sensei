@@ -217,39 +217,7 @@ export type Database = {
       }
     }
     Views: {
-      leaderboard_stats: {
-        Row: {
-          avatar_url: string | null
-          badges_earned: number | null
-          display_name: string | null
-          goals_completed: number | null
-          last_active: string | null
-          skill_level: string | null
-          total_sessions: number | null
-          user_id: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          badges_earned?: never
-          display_name?: string | null
-          goals_completed?: never
-          last_active?: never
-          skill_level?: string | null
-          total_sessions?: never
-          user_id?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          badges_earned?: never
-          display_name?: string | null
-          goals_completed?: never
-          last_active?: never
-          skill_level?: string | null
-          total_sessions?: never
-          user_id?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       has_role: {
