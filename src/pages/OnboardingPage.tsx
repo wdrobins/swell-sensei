@@ -262,7 +262,7 @@ const OnboardingPage: React.FC = () => {
                     variant={formData.riskTolerance === 'conservative' ? 'default' : 'outline'}
                     onClick={() => setFormData({...formData, riskTolerance: 'conservative'})}
                   >
-                    Conservative
+                    Nice and easy
                   </Button>
                   <Button
                     variant={formData.riskTolerance === 'moderate' ? 'default' : 'outline'}
@@ -274,7 +274,7 @@ const OnboardingPage: React.FC = () => {
                     variant={formData.riskTolerance === 'aggressive' ? 'default' : 'outline'}
                     onClick={() => setFormData({...formData, riskTolerance: 'aggressive'})}
                   >
-                    Aggressive
+                    Send it
                   </Button>
                 </div>
               </div>
