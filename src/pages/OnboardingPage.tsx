@@ -289,7 +289,9 @@ const OnboardingPage: React.FC = () => {
           'Learn to surf reef breaks',
           'Improve technique',
           'Build confidence',
-          'Get more barrels'
+          'Get more barrels',
+          'High performance surfing',
+          'Airs'
         ];
         
         return (
