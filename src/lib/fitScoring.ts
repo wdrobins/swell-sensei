@@ -2,8 +2,11 @@ import { SurfSpot, ForecastData, SurferProfile } from './mockData';
 
 export interface FitScoreResult {
   score: number;
+  safetyScore: number;
+  excitementScore: number;
   label: 'Safe' | 'Manageable' | 'Stretch' | 'No-Go';
   color: 'success' | 'accent' | 'warning' | 'destructive';
+  excitementLabel: 'Mellow' | 'Fun' | 'Pumping' | 'Epic';
   reasoning: string[];
   alternatives: string[];
   checklist: string[];
@@ -157,6 +160,99 @@ function calculateExperienceScore(spot: SurfSpot, profile: SurferProfile): numbe
 }
 
 /**
+ * Calculate excitement score based on wave quality and conditions
+ */
+function calculateExcitementScore(
+  spot: SurfSpot,
+  forecast: ForecastData,
+  profile: SurferProfile,
+  ews: number
+): number {
+  let excitement = 0;
+  
+  // Wave size relative to preference - bigger is more exciting (up to a point)
+  const comfortSize = getComfortWaveSize(profile.comfortableWaveSize);
+  const sizeRatio = ews / comfortSize;
+  
+  if (sizeRatio >= 0.7 && sizeRatio <= 1.0) {
+    excitement += 50; // Sweet spot
+  } else if (sizeRatio > 1.0 && sizeRatio <= 1.5) {
+    excitement += 70; // Pushing limits = more exciting
+  } else if (sizeRatio > 1.5 && sizeRatio <= 2.0) {
+    excitement += 90; // Challenge mode
+  } else if (sizeRatio > 2.0) {
+    excitement += 100; // Maximum stoke
+  } else {
+    excitement += sizeRatio * 50; // Smaller waves = less exciting
+  }
+  
+  // Swell period quality - longer periods = better waves
+  if (forecast.swellPeriod >= 14) {
+    excitement += 15; // Ground swell bonus
+  } else if (forecast.swellPeriod >= 10) {
+    excitement += 8;
+  } else {
+    excitement -= 5; // Windswept penalty
+  }
+  
+  // Wind conditions affect wave quality
+  const isOffshore = spot.idealWindDirs.some(ideal => 
+    Math.abs(forecast.windDirection - ideal) <= 45 || Math.abs(forecast.windDirection - ideal) >= 315
+  );
+  
+  if (isOffshore && forecast.windSpeed <= 15) {
+    excitement += 20; // Clean conditions
+  } else if (isOffshore) {
+    excitement += 10;
+  } else if (forecast.windSpeed <= 8) {
+    excitement += 5; // Light winds OK
+  } else {
+    excitement -= 10; // Choppy conditions
+  }
+  
+  // Break type excitement factor
+  const breakExcitement: Record<string, number> = {
+    'point': 15,
+    'reef': 12,
+    'beach': 5
+  };
+  excitement += breakExcitement[spot.breakType] || 5;
+  
+  // Risk tolerance affects excitement perception
+  if (profile.riskTolerance === 'aggressive') {
+    excitement += 10; // Thrill seekers get more stoked
+  } else if (profile.riskTolerance === 'conservative') {
+    excitement -= 5; // More cautious approach
+  }
+  
+  // Goals boost - if conditions match goals
+  if (profile.goals.some(g => g.toLowerCase().includes('bigger waves')) && sizeRatio > 1.0) {
+    excitement += 15;
+  }
+  if (profile.goals.some(g => g.toLowerCase().includes('barrel')) && spot.breakType === 'reef') {
+    excitement += 15;
+  }
+  if (profile.goals.some(g => g.toLowerCase().includes('air') || g.toLowerCase().includes('performance'))) {
+    // Airs need clean conditions and good size
+    if (isOffshore && sizeRatio >= 0.8 && sizeRatio <= 1.3) {
+      excitement += 15;
+    }
+  }
+  
+  return Math.min(Math.max(excitement, 0), 100);
+}
+
+/**
+ * Get excitement label based on score
+ */
+function getExcitementLabel(score: number): FitScoreResult['excitementLabel'] {
+  if (score >= 80) return 'Epic';
+  if (score >= 60) return 'Pumping';
+  if (score >= 40) return 'Fun';
+  return 'Mellow';
+}
+
+/**
  * Main fit scoring function
  */
 export function calculateFitScore(
@@ -179,11 +275,17 @@ export function calculateFitScore(
   const autoNoGo = windScore === -100 || 
     (ews > 2.3 && forecast.swellPeriod > 16 && spot.breakType === 'beach' && profile.riskTolerance === 'conservative');
   
+  // Calculate excitement score
+  const excitementScore = autoNoGo ? 0 : calculateExcitementScore(spot, forecast, profile, ews);
+  
   if (autoNoGo) {
     return {
       score: 0,
+      safetyScore: 0,
+      excitementScore: 0,
       label: 'No-Go',
       color: 'destructive',
+      excitementLabel: 'Mellow',
       reasoning: ['Unsafe conditions detected'],
       alternatives: [],
       checklist: [],
@@ -194,22 +296,27 @@ export function calculateFitScore(
     };
   }
   
-  // Weighted score calculation
-  const baseScore = Math.max(0, Math.min(100,
+  // Weighted score calculation for safety
+  const safetyScore = Math.max(0, Math.min(100,
     comfortScore + windScore + tideScore + hazardScore + experienceScore + confidenceBonus
   ));
   
-  // Apply confidence damping
-  const finalScore = Math.round(baseScore * (0.7 + 0.3 * forecast.confidence));
+  // Apply confidence damping to safety score
+  const dampedSafetyScore = Math.round(safetyScore * (0.7 + 0.3 * forecast.confidence));
   
-  // Determine label and color
+  // Combined score balances safety (60%) and excitement (40%)
+  const finalScore = Math.round(dampedSafetyScore * 0.6 + excitementScore * 0.4);
+  
+  // Determine label and color based on safety score
   let label: FitScoreResult['label'];
   let color: FitScoreResult['color'];
   
-  if (finalScore >= 80) { label = 'Safe'; color = 'success'; }
-  else if (finalScore >= 60) { label = 'Manageable'; color = 'accent'; }
-  else if (finalScore >= 40) { label = 'Stretch'; color = 'warning'; }
+  if (dampedSafetyScore >= 80) { label = 'Safe'; color = 'success'; }
+  else if (dampedSafetyScore >= 60) { label = 'Manageable'; color = 'accent'; }
+  else if (dampedSafetyScore >= 40) { label = 'Stretch'; color = 'warning'; }
   else { label = 'No-Go'; color = 'destructive'; }
+  
+  const excitementLabel = getExcitementLabel(excitementScore);
   
   // Generate reasoning
   const reasoning = [];
@@ -220,6 +327,8 @@ export function calculateFitScore(
   if (experienceScore < 0) reasoning.push(`Limited experience with ${spot.breakType} breaks`);
   if (comfortScore >= 80) reasoning.push('Wave size within comfort zone');
   if (windScore > 5) reasoning.push('Favorable offshore winds');
+  if (excitementScore >= 70) reasoning.push('Excellent wave quality for progression');
+  if (excitementScore >= 90) reasoning.push('Epic conditions - don\'t miss it!');
   
   // Generate checklist
   const checklist = [
@@ -236,8 +345,11 @@ export function calculateFitScore(
   
   return {
     score: finalScore,
+    safetyScore: dampedSafetyScore,
+    excitementScore: Math.round(excitementScore),
     label,
     color,
+    excitementLabel,
     reasoning,
     alternatives: [], // Would be populated with nearby spots in production
     checklist,
