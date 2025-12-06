@@ -25,7 +25,15 @@ const SpotsPage: React.FC = () => {
   // Get home coordinates
   const homeCoords = homeLocations[homeLocation] || homeLocations['Melbourne CBD'];
 
-  // Calculate distances and filter spots
+  // Fetch real forecast data for ALL spots (must be called unconditionally for React hooks rules)
+  const { data: forecastData, isLoading } = useMultipleSpotForecasts(
+    surfSpots.map(spot => ({
+      id: spot.id,
+      coordinates: spot.coordinates
+    }))
+  );
+
+  // Calculate distances for all spots
   const spotsWithDistance = surfSpots.map(spot => {
     const distance = calculateDistance(
       homeCoords[0], homeCoords[1],
@@ -34,6 +42,7 @@ const SpotsPage: React.FC = () => {
     return { ...spot, distance };
   });
 
+  // Filter spots based on user preferences
   const filteredSpots = spotsWithDistance.filter(spot => {
     // Search filter
     const matchesSearch = 
@@ -51,14 +60,6 @@ const SpotsPage: React.FC = () => {
     
     return matchesSearch && matchesDistance && matchesSkill && matchesLifeguard;
   });
-
-  // Fetch real forecast data for all spots
-  const { data: forecastData, isLoading } = useMultipleSpotForecasts(
-    filteredSpots.map(spot => ({
-      id: spot.id,
-      coordinates: spot.coordinates
-    }))
-  );
 
   // Calculate fit scores for each spot using real or mock data
   const spotsWithScores = filteredSpots.map(spot => {
