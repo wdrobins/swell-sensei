@@ -73,6 +73,12 @@ const PlanPage: React.FC = () => {
     fetchUserProfile();
   }, [user]);
 
+  // Seeded random for consistent results per spot
+  const seededRandom = (seed: number) => {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+  };
+
   // Generate recommendations when date and time are selected
   useEffect(() => {
     if (!selectedDate || !selectedTime) {
@@ -86,21 +92,46 @@ const PlanPage: React.FC = () => {
     );
     const dayForecast = weeklyForecast[dayIndex] || weeklyForecast[0];
 
-    // Adjust forecast based on time of day
+    // Base conditions adjusted by time of day
     const timeMultiplier = selectedTime.hour <= 8 ? 1.1 : selectedTime.hour >= 14 ? 0.85 : 1.0;
     const windMultiplier = selectedTime.hour <= 8 ? 0.6 : selectedTime.hour >= 14 ? 1.4 : 1.0;
+    const baseSwellDir = 200; // SW swell
 
-    // Calculate fit scores for all spots
-    const spotScores: SpotRecommendation[] = surfSpots.map(spot => {
+    // Calculate fit scores for all spots with spot-specific variations
+    const spotScores: SpotRecommendation[] = surfSpots.map((spot, index) => {
+      // Create spot-specific forecast variations based on location and orientation
+      const spotSeed = index + dayIndex * 100 + selectedTime.hour;
+      const spotVariation = seededRandom(spotSeed);
+      
+      // Vary swell height slightly based on spot exposure
+      const exposureFactor = spot.breakType === 'point' ? 0.9 : spot.breakType === 'reef' ? 1.0 : 1.1;
+      const swellHeight = dayForecast.swellHeight * timeMultiplier * exposureFactor * (0.9 + spotVariation * 0.2);
+      
+      // Wind direction varies - some spots get more shelter
+      const shelterBonus = spot.easyEntry ? 0.8 : 1.0;
+      const windSpeed = dayForecast.windSpeed * windMultiplier * shelterBonus * (0.8 + spotVariation * 0.4);
+      
+      // Wind direction - morning offshore, afternoon onshore with variation
+      const baseWindDir = selectedTime.hour <= 10 ? 30 : 180;
+      const windDirection = baseWindDir + (spotVariation * 60 - 30);
+      
+      // Swell direction varies slightly per spot
+      const swellDirection = baseSwellDir + (spotVariation * 40 - 20);
+      
+      // Tide level based on time with spot-specific ideal matching
+      const baseTide = 1.0 + Math.sin(selectedTime.hour / 6 * Math.PI) * 0.5;
+      const tideLevel = spot.idealTide === 'low' ? baseTide * 0.7 : 
+                        spot.idealTide === 'high' ? baseTide * 1.3 : baseTide;
+
       const forecast: ForecastData = {
         timestamp: new Date().toISOString(),
-        swellHeight: dayForecast.swellHeight * timeMultiplier,
-        swellPeriod: dayForecast.swellPeriod,
-        swellDirection: 200 + Math.random() * 40, // SW-S swell
-        windSpeed: dayForecast.windSpeed * windMultiplier,
-        windDirection: selectedTime.hour <= 10 ? 30 : 180, // Offshore morning, onshore afternoon
-        tideLevel: 1.0 + Math.sin(selectedTime.hour / 6 * Math.PI) * 0.5, // Simulated tide
-        confidence: 0.85
+        swellHeight,
+        swellPeriod: dayForecast.swellPeriod + Math.floor(spotVariation * 4 - 2),
+        swellDirection,
+        windSpeed,
+        windDirection,
+        tideLevel,
+        confidence: 0.75 + spotVariation * 0.2
       };
 
       const fitResult = calculateFitScore(spot, forecast, mockSurferProfile);
