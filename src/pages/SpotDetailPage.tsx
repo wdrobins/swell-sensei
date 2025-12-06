@@ -177,6 +177,15 @@ const SpotDetailPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              {forecast && (
+                <div>
+                  <span className="text-muted-foreground text-sm">Current Swell Period:</span>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Waves className="h-4 w-4 text-primary" />
+                    <span className="font-medium">{forecast.swellPeriod}s</span>
+                  </div>
+                </div>
+              )}
               <div>
                 <span className="text-muted-foreground text-sm">Swell Direction:</span>
                 <div className="flex items-center gap-1 mt-1">

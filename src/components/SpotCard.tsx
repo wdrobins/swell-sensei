@@ -33,9 +33,12 @@ const SpotCard: React.FC<SpotCardProps> = ({ spot, fitScore, fitLabel, showFitSc
     return 'destructive';
   };
 
-  // Convert meters to feet
-  const metersToFeet = (meters: number): string => {
-    return (meters * 3.28084).toFixed(1);
+  // Convert meters to feet range
+  const getWaveHeightRange = (meters: number): string => {
+    const feet = meters * 3.28084;
+    const low = Math.max(0, feet - 0.5).toFixed(0);
+    const high = (feet + 0.5).toFixed(0);
+    return `${low}-${high}`;
   };
 
   return (
@@ -70,7 +73,7 @@ const SpotCard: React.FC<SpotCardProps> = ({ spot, fitScore, fitLabel, showFitSc
               <div className="flex items-center gap-2">
                 <Waves className="h-5 w-5 text-primary" />
                 <span className="font-bold text-lg text-primary">
-                  {metersToFeet(forecast.swellHeight)}ft @ {forecast.swellPeriod}s
+                  {getWaveHeightRange(forecast.swellHeight)}ft
                 </span>
               </div>
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
