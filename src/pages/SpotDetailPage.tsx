@@ -195,7 +195,7 @@ const SpotDetailPage: React.FC = () => {
                       <span className="text-sm text-muted-foreground">Wave Height</span>
                     </div>
                     <span className="text-2xl font-bold text-primary">
-                      {(forecast.swellHeight * 3.28084).toFixed(1)}ft
+                      {Math.round(forecast.swellHeight * 3.28084)}ft
                     </span>
                   </div>
                   
@@ -205,7 +205,7 @@ const SpotDetailPage: React.FC = () => {
                       <Clock className="h-5 w-5 text-accent" />
                       <span className="text-sm text-muted-foreground">Swell Period</span>
                     </div>
-                    <span className="text-xl font-bold">{forecast.swellPeriod.toFixed(0)}s</span>
+                    <span className="text-xl font-bold">{Math.round(forecast.swellPeriod)}s</span>
                   </div>
                   
                   {/* Swell Direction */}
@@ -215,7 +215,7 @@ const SpotDetailPage: React.FC = () => {
                       <span className="text-sm text-muted-foreground">Swell Direction</span>
                     </div>
                     <span className="text-lg font-medium">
-                      {forecast.swellDirection}° ({degreesArrayToCompass([forecast.swellDirection])})
+                      {Math.round(forecast.swellDirection)}° ({degreesArrayToCompass([forecast.swellDirection])})
                     </span>
                   </div>
                   
@@ -284,7 +284,7 @@ const SpotDetailPage: React.FC = () => {
                   <span className="text-muted-foreground text-sm">Current Swell Period:</span>
                   <div className="flex items-center gap-1 mt-1">
                     <Waves className="h-4 w-4 text-primary" />
-                    <span className="font-medium">{forecast.swellPeriod}s</span>
+                    <span className="font-medium">{Math.round(forecast.swellPeriod)}s</span>
                   </div>
                 </div>
               )}
