@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import FitScoreCard from '@/components/FitScoreCard';
+import ForecastChart from '@/components/ForecastChart';
 import { surfSpots, mockForecast, mockSurferProfile, ForecastData } from '@/lib/mockData';
 import { calculateFitScore } from '@/lib/fitScoring';
 import { useMarineForecast } from '@/hooks/useMarineForecast';
@@ -341,6 +342,22 @@ const SpotDetailPage: React.FC = () => {
               )}
             </CardContent>
           </Card>
+        </div>
+
+        {/* 7-Day Forecast Chart - Full width */}
+        <div className="lg:col-span-3">
+          {isLoading ? (
+            <Card className="shadow-float">
+              <CardHeader>
+                <Skeleton className="h-6 w-40" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-64 w-full" />
+              </CardContent>
+            </Card>
+          ) : forecastData?.daily && forecastData.daily.length > 0 ? (
+            <ForecastChart dailyForecast={forecastData.daily} />
+          ) : null}
         </div>
 
         {/* Local Knowledge - Full width */}
