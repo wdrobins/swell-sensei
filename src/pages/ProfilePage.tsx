@@ -8,10 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  User, Waves, Target, MapPin, TrendingUp, 
-  Calendar, Award, Settings, Edit, Save
+  User, Waves, Target, TrendingUp, 
+  Award, Edit, Save
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -322,35 +321,6 @@ const ProfilePage: React.FC = () => {
                 </CardContent>
               </Card>
 
-              {/* Quick Actions */}
-              <Card className="shadow-float">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="h-5 w-5 text-muted-foreground" />
-                    Quick Actions
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button asChild variant="outline" size="sm" className="w-full justify-start">
-                    <Link to="/plan">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Plan a Session
-                    </Link>
-                  </Button>
-                  <Button asChild variant="outline" size="sm" className="w-full justify-start">
-                    <Link to="/spots">
-                      <MapPin className="h-4 w-4 mr-2" />
-                      Browse Surf Spots
-                    </Link>
-                  </Button>
-                  <Button asChild variant="outline" size="sm" className="w-full justify-start">
-                    <Link to="/logs">
-                      <Waves className="h-4 w-4 mr-2" />
-                      View Session Logs
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </TabsContent>
