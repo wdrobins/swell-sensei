@@ -21,6 +21,19 @@ const SpotsPage: React.FC = () => {
   const [filterByDistance, setFilterByDistance] = React.useState<boolean>(false);
   const [skillFilter, setSkillFilter] = React.useState<string>('all');
   const [lifeguardedOnly, setLifeguardedOnly] = React.useState<boolean>(false);
+  const [stateFilter, setStateFilter] = React.useState<string>('all');
+
+  // Extract unique states from spot regions
+  const states = React.useMemo(() => {
+    const stateSet = new Set<string>();
+    surfSpots.forEach(spot => {
+      // Extract state from region (e.g., "Surf Coast VIC" -> "VIC")
+      const parts = spot.region.split(' ');
+      const state = parts[parts.length - 1];
+      stateSet.add(state);
+    });
+    return Array.from(stateSet).sort();
+  }, []);
 
   // Get home coordinates
   const homeCoords = homeLocations[homeLocation] || homeLocations['Melbourne CBD'];
@@ -49,6 +62,10 @@ const SpotsPage: React.FC = () => {
       spot.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       spot.region.toLowerCase().includes(searchTerm.toLowerCase());
     
+    // State filter
+    const spotState = spot.region.split(' ').pop() || '';
+    const matchesState = stateFilter === 'all' || spotState === stateFilter;
+    
     // Distance filter
     const matchesDistance = !filterByDistance || spot.distance <= maxDistance;
     
@@ -58,7 +75,7 @@ const SpotsPage: React.FC = () => {
     // Lifeguarded filter
     const matchesLifeguard = !lifeguardedOnly || spot.lifeguarded;
     
-    return matchesSearch && matchesDistance && matchesSkill && matchesLifeguard;
+    return matchesSearch && matchesState && matchesDistance && matchesSkill && matchesLifeguard;
   });
 
   // Calculate fit scores for each spot using real or mock data
@@ -132,15 +149,32 @@ const SpotsPage: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search spots by name or region..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+          {/* Search and State Filter */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search spots by name or region..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="space-y-1">
+              <Select value={stateFilter} onValueChange={setStateFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by state" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All States</SelectItem>
+                  {states.map(state => (
+                    <SelectItem key={state} value={state}>
+                      {state}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Proximity Filter */}
@@ -245,6 +279,7 @@ const SpotsPage: React.FC = () => {
       {/* Results count */}
       <div className="mb-4 text-sm text-muted-foreground">
         Showing {spotsWithScores.length} of {surfSpots.length} spots
+        {stateFilter !== 'all' && ` in ${stateFilter}`}
         {filterByDistance && ` within ${maxDistance}km of ${homeLocation}`}
       </div>
 
