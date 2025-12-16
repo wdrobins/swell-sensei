@@ -136,61 +136,6 @@ const Index = () => {
       </section>
 
       <div className="container mx-auto px-4 py-12">
-        {/* Time-Based Recommendation */}
-        <Card className="mb-8 shadow-float bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <timeInfo.icon className="h-5 w-5 text-primary" />
-              Best Spot Right Now ({timeInfo.label})
-              <Badge variant="outline" className={`ml-auto ${getQualityColor(timeInfo.quality)}`}>
-                {timeInfo.quality.charAt(0).toUpperCase() + timeInfo.quality.slice(1)} Conditions
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">{timeInfo.message}</p>
-            {bestSpotNow && timeInfo.quality !== 'none' ? (
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-background/50 rounded-lg">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-xl font-bold">{bestSpotNow.spot.name}</h3>
-                    <Badge variant={bestSpotNow.result.color as any}>
-                      {bestSpotNow.result.label}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {bestSpotNow.spot.region} • {bestSpotNow.spot.breakType} break
-                  </p>
-                  <p className="text-sm">{bestSpotNow.result.coachingTip}</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-center">
-                    <div className={`text-4xl font-bold ${
-                      bestSpotNow.result.score >= 8 ? 'text-success' :
-                      bestSpotNow.result.score >= 6 ? 'text-accent' :
-                      bestSpotNow.result.score >= 4 ? 'text-warning' : 'text-destructive'
-                    }`}>
-                      {bestSpotNow.result.score}/10
-                    </div>
-                    <div className="text-xs text-muted-foreground">Fit Score</div>
-                  </div>
-                  <Button asChild className="bg-gradient-ocean">
-                    <Link to={`/spots/${bestSpotNow.spot.id}`}>
-                      View Spot
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                <p className="text-muted-foreground">Check back at dawn for the best conditions!</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         {/* Quick Dashboard */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
           {/* Today's Best Spot - FitScoreCard */}
@@ -224,12 +169,6 @@ const Index = () => {
                   </div>
                 );
               })}
-              
-              <div className="pt-2 border-t">
-                <Button asChild variant="outline" size="sm" className="w-full">
-                  <Link to="/plan">Plan Your Session</Link>
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </div>
@@ -302,48 +241,6 @@ const Index = () => {
               </div>
             </CardContent>
           </Card>
-        </section>
-
-        {/* Quick Actions */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold text-foreground mb-6">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="group cursor-pointer hover:shadow-float transition-all duration-300 hover:scale-[1.02]">
-              <Link to="/plan">
-                <CardContent className="p-6 text-center">
-                  <Calendar className="h-12 w-12 text-primary mx-auto mb-4 group-hover:scale-110 transition-transform" />
-                  <h3 className="font-semibold mb-2">Plan Session</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Find the best time and spot for your next surf
-                  </p>
-                </CardContent>
-              </Link>
-            </Card>
-            
-            <Card className="group cursor-pointer hover:shadow-float transition-all duration-300 hover:scale-[1.02]">
-              <Link to="/spots">
-                <CardContent className="p-6 text-center">
-                  <MapPin className="h-12 w-12 text-accent mx-auto mb-4 group-hover:scale-110 transition-transform" />
-                  <h3 className="font-semibold mb-2">Explore Spots</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Discover new surf breaks that match your skill level
-                  </p>
-                </CardContent>
-              </Link>
-            </Card>
-            
-            <Card className="group cursor-pointer hover:shadow-float transition-all duration-300 hover:scale-[1.02]">
-              <Link to="/profile">
-                <CardContent className="p-6 text-center">
-                  <TrendingUp className="h-12 w-12 text-success mx-auto mb-4 group-hover:scale-110 transition-transform" />
-                  <h3 className="font-semibold mb-2">Track Progress</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Log sessions and improve your surfing skills
-                  </p>
-                </CardContent>
-              </Link>
-            </Card>
-          </div>
         </section>
 
         {/* Safety & Features */}

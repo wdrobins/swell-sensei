@@ -10,12 +10,9 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import Index from "./pages/Index";
 import SpotsPage from "./pages/SpotsPage";
 import SpotDetailPage from "./pages/SpotDetailPage";
-import PlanPage from "./pages/PlanPage";
 import ProfilePage from "./pages/ProfilePage";
 import OnboardingPage from "./pages/OnboardingPage";
 import AuthPage from "./pages/AuthPage";
-import LogsPage from "./pages/LogsPage";
-import AnalyticsPage from "./pages/AnalyticsPage";
 
 import NotFound from "./pages/NotFound";
 
@@ -36,9 +33,6 @@ const App = () => (
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/spots" element={<SpotsPage />} />
                 <Route path="/spots/:id" element={<SpotDetailPage />} />
-                <Route path="/plan" element={<ProtectedRoute><PlanPage /></ProtectedRoute>} />
-                <Route path="/logs" element={<ProtectedRoute><LogsPage /></ProtectedRoute>} />
-                <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
                 
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path="/onboarding" element={<OnboardingPage />} />
