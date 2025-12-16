@@ -55,7 +55,7 @@ const FitScoreCard: React.FC<FitScoreCardProps> = ({ result, spotName }) => {
         <div className="text-center space-y-2">
           <div className="text-4xl font-bold text-foreground">
             {result.score}
-            <span className="text-lg text-muted-foreground">/100</span>
+            <span className="text-lg text-muted-foreground">/10</span>
           </div>
           <div className="flex justify-center gap-2">
             <Badge variant="outline" className={`text-${result.color} border-${result.color}/50`}>
@@ -65,7 +65,7 @@ const FitScoreCard: React.FC<FitScoreCardProps> = ({ result, spotName }) => {
               {result.excitementLabel}
             </Badge>
           </div>
-          <Progress value={result.score} className="w-full h-2" />
+          <Progress value={result.score * 10} className="w-full h-2" />
         </div>
 
         {/* Safety & Excitement Breakdown */}
@@ -75,16 +75,16 @@ const FitScoreCard: React.FC<FitScoreCardProps> = ({ result, spotName }) => {
               <Shield className="h-4 w-4 text-success" />
               <span className="text-xs font-medium text-muted-foreground uppercase">Safety</span>
             </div>
-            <div className="text-2xl font-bold text-success">{result.safetyScore}</div>
-            <Progress value={result.safetyScore} className="w-full h-1.5 mt-1" />
+            <div className="text-2xl font-bold text-success">{result.safetyScore}/10</div>
+            <Progress value={result.safetyScore * 10} className="w-full h-1.5 mt-1" />
           </div>
           <div className="bg-muted/50 rounded-lg p-3 text-center">
             <div className="flex items-center justify-center gap-1 mb-1">
               <Zap className="h-4 w-4 text-primary" />
               <span className="text-xs font-medium text-muted-foreground uppercase">Excitement</span>
             </div>
-            <div className="text-2xl font-bold text-primary">{result.excitementScore}</div>
-            <Progress value={result.excitementScore} className="w-full h-1.5 mt-1" />
+            <div className="text-2xl font-bold text-primary">{result.excitementScore}/10</div>
+            <Progress value={result.excitementScore * 10} className="w-full h-1.5 mt-1" />
           </div>
         </div>
 

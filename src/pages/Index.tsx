@@ -166,11 +166,11 @@ const Index = () => {
                 <div className="flex items-center gap-4">
                   <div className="text-center">
                     <div className={`text-4xl font-bold ${
-                      bestSpotNow.result.score >= 80 ? 'text-success' :
-                      bestSpotNow.result.score >= 60 ? 'text-accent' :
-                      bestSpotNow.result.score >= 40 ? 'text-warning' : 'text-destructive'
+                      bestSpotNow.result.score >= 8 ? 'text-success' :
+                      bestSpotNow.result.score >= 6 ? 'text-accent' :
+                      bestSpotNow.result.score >= 4 ? 'text-warning' : 'text-destructive'
                     }`}>
-                      {bestSpotNow.result.score}
+                      {bestSpotNow.result.score}/10
                     </div>
                     <div className="text-xs text-muted-foreground">Fit Score</div>
                   </div>
@@ -270,13 +270,13 @@ const Index = () => {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
                 {[
-                  { score: 75, conditions: '2ft Clean', color: 'accent' },
-                  { score: 85, conditions: '3ft Offshore', color: 'success' },
-                  { score: 45, conditions: '2ft Onshore', color: 'warning' },
-                  { score: 65, conditions: '2-3ft Cross', color: 'accent' },
-                  { score: 30, conditions: '1ft Messy', color: 'destructive' },
-                  { score: 70, conditions: '2ft Clean', color: 'accent' },
-                  { score: 80, conditions: '3ft Glass', color: 'success' }
+                  { score: 7, conditions: '2ft Clean', color: 'accent' },
+                  { score: 9, conditions: '3ft Offshore', color: 'success' },
+                  { score: 5, conditions: '2ft Onshore', color: 'warning' },
+                  { score: 6, conditions: '2-3ft Cross', color: 'accent' },
+                  { score: 3, conditions: '1ft Messy', color: 'destructive' },
+                  { score: 7, conditions: '2ft Clean', color: 'accent' },
+                  { score: 8, conditions: '3ft Glass', color: 'success' }
                 ].map((forecast, index) => {
                   const date = addDays(new Date(), index);
                   const dayLabel = index === 0 ? 'Today' : format(date, 'EEE');
@@ -286,7 +286,7 @@ const Index = () => {
                     <Card key={index} className="text-center p-3">
                       <div className="text-sm font-medium mb-1">{dayLabel}</div>
                       <div className="text-xs text-muted-foreground mb-1">{dateLabel}</div>
-                      <div className="text-2xl font-bold mb-1">{forecast.score}</div>
+                      <div className="text-2xl font-bold mb-1">{forecast.score}/10</div>
                       <Badge variant={forecast.color as any} className="text-xs">
                         {forecast.conditions}
                       </Badge>

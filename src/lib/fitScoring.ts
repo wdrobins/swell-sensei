@@ -387,24 +387,29 @@ export function calculateFitScore(
     };
   }
   
-  // Weighted score calculation for safety
-  const safetyScore = Math.max(0, Math.min(100,
+  // Weighted score calculation for safety (0-100 internal)
+  const safetyScore100 = Math.max(0, Math.min(100,
     comfortScore + windScore + tideScore + hazardScore + experienceScore + confidenceBonus
   ));
   
   // Apply confidence damping to safety score
-  const dampedSafetyScore = Math.round(safetyScore * (0.7 + 0.3 * forecast.confidence));
+  const dampedSafetyScore100 = safetyScore100 * (0.7 + 0.3 * forecast.confidence);
   
   // Combined score balances safety (60%) and excitement (40%)
-  const finalScore = Math.round(dampedSafetyScore * 0.6 + excitementScore * 0.4);
+  const finalScore100 = dampedSafetyScore100 * 0.6 + excitementScore * 0.4;
   
-  // Determine label and color based on safety score
+  // Convert to 1-10 scale (no decimals)
+  const finalScore = Math.max(1, Math.round(finalScore100 / 10));
+  const dampedSafetyScore = Math.max(1, Math.round(dampedSafetyScore100 / 10));
+  const excitementScore10 = Math.max(1, Math.round(excitementScore / 10));
+  
+  // Determine label and color based on safety score (now 1-10 scale)
   let label: FitScoreResult['label'];
   let color: FitScoreResult['color'];
   
-  if (dampedSafetyScore >= 80) { label = 'Safe'; color = 'success'; }
-  else if (dampedSafetyScore >= 60) { label = 'Manageable'; color = 'accent'; }
-  else if (dampedSafetyScore >= 40) { label = 'Stretch'; color = 'warning'; }
+  if (dampedSafetyScore >= 8) { label = 'Safe'; color = 'success'; }
+  else if (dampedSafetyScore >= 6) { label = 'Manageable'; color = 'accent'; }
+  else if (dampedSafetyScore >= 4) { label = 'Stretch'; color = 'warning'; }
   else { label = 'No-Go'; color = 'destructive'; }
   
   const excitementLabel = getExcitementLabel(excitementScore);
@@ -430,12 +435,16 @@ export function calculateFitScore(
   ];
   
   // Generate spot-specific coaching tip
-  const coachingTip = generateSpotCoachingTip(spot, forecast, profile, ews, dampedSafetyScore, excitementScore);
+  const coachingTip = generateSpotCoachingTip(spot, forecast, profile, ews, dampedSafetyScore100, excitementScore);
+  
+  // Best windows scores (1-10 scale)
+  const dawnScore = Math.min(10, Math.max(1, finalScore + 1));
+  const afternoonScore = Math.max(1, finalScore - 2);
   
   return {
     score: finalScore,
     safetyScore: dampedSafetyScore,
-    excitementScore: Math.round(excitementScore),
+    excitementScore: excitementScore10,
     label,
     color,
     excitementLabel,
@@ -444,9 +453,9 @@ export function calculateFitScore(
     checklist,
     coachingTip,
     bestWindows: [
-      { time: 'Dawn (6-8am)', score: finalScore + 5, conditions: 'Lighter winds' },
+      { time: 'Dawn (6-8am)', score: dawnScore, conditions: 'Lighter winds' },
       { time: 'Morning (8-10am)', score: finalScore, conditions: 'Current conditions' },
-      { time: 'Afternoon (2-4pm)', score: Math.max(finalScore - 15, 0), conditions: 'Stronger winds expected' }
+      { time: 'Afternoon (2-4pm)', score: afternoonScore, conditions: 'Stronger winds expected' }
     ],
     citations: [`Forecast from Surfline & Windy, fetched ${new Date().toLocaleTimeString()} local`],
     autoNoGo: false

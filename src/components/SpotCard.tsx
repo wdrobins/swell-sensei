@@ -27,9 +27,9 @@ const SpotCard: React.FC<SpotCardProps> = ({ spot, fitScore, fitLabel, showFitSc
 
   const getFitScoreColor = () => {
     if (!fitScore) return 'secondary';
-    if (fitScore >= 80) return 'success';
-    if (fitScore >= 60) return 'accent';
-    if (fitScore >= 40) return 'warning';
+    if (fitScore >= 8) return 'success';
+    if (fitScore >= 6) return 'accent';
+    if (fitScore >= 4) return 'warning';
     return 'destructive';
   };
 
