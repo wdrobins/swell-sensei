@@ -63,7 +63,7 @@ export const surfSpots: SurfSpot[] = [
     id: 'bells-beach',
     name: 'Bells Beach',
     region: 'Surf Coast VIC',
-    coordinates: [-38.3739, 144.2834],
+    coordinates: [-38.42, 144.28], // Offshore coordinates for marine API
     orientation: 210,
     breakType: 'point',
     bottom: 'Rock/Sand',
@@ -89,7 +89,7 @@ export const surfSpots: SurfSpot[] = [
     id: 'winkipop',
     name: 'Winkipop',
     region: 'Surf Coast VIC',
-    coordinates: [-38.3756, 144.2845],
+    coordinates: [-38.42, 144.28], // Offshore coordinates for marine API
     orientation: 220,
     breakType: 'point',
     bottom: 'Rock',
@@ -115,7 +115,7 @@ export const surfSpots: SurfSpot[] = [
     id: 'jan-juc',
     name: 'Jan Juc',
     region: 'Surf Coast VIC',
-    coordinates: [-38.3489, 144.3021],
+    coordinates: [-38.40, 144.30], // Offshore coordinates for marine API
     orientation: 200,
     breakType: 'beach',
     bottom: 'Sand',
@@ -141,7 +141,7 @@ export const surfSpots: SurfSpot[] = [
     id: 'thirteenth-beach',
     name: '13th Beach',
     region: 'Surf Coast VIC',
-    coordinates: [-38.2567, 144.6234],
+    coordinates: [-38.32, 144.62], // Offshore coordinates for marine API
     orientation: 180,
     breakType: 'beach',
     bottom: 'Sand',
@@ -167,7 +167,7 @@ export const surfSpots: SurfSpot[] = [
     id: 'torquay-front-beach',
     name: 'Torquay Front Beach',
     region: 'Surf Coast VIC',
-    coordinates: [-38.3345, 144.3201],
+    coordinates: [-38.38, 144.32], // Offshore coordinates for marine API
     orientation: 190,
     breakType: 'beach',
     bottom: 'Sand',
@@ -193,7 +193,7 @@ export const surfSpots: SurfSpot[] = [
     id: 'point-addis',
     name: 'Point Addis',
     region: 'Surf Coast VIC',
-    coordinates: [-38.3912, 144.2567],
+    coordinates: [-38.44, 144.25], // Offshore coordinates for marine API
     orientation: 200,
     breakType: 'reef',
     bottom: 'Rock/Reef',
@@ -219,7 +219,7 @@ export const surfSpots: SurfSpot[] = [
     id: 'anglesea',
     name: 'Anglesea',
     region: 'Surf Coast VIC',
-    coordinates: [-38.4078, 144.1890],
+    coordinates: [-38.46, 144.18], // Offshore coordinates for marine API
     orientation: 205,
     breakType: 'beach',
     bottom: 'Sand',
@@ -245,7 +245,7 @@ export const surfSpots: SurfSpot[] = [
     id: 'fairhaven',
     name: 'Fairhaven',
     region: 'Surf Coast VIC',
-    coordinates: [-38.4589, 144.0234],
+    coordinates: [-38.51, 144.02], // Offshore coordinates for marine API
     orientation: 210,
     breakType: 'beach',
     bottom: 'Sand',
@@ -271,7 +271,7 @@ export const surfSpots: SurfSpot[] = [
     id: 'lorne',
     name: 'Lorne',
     region: 'Surf Coast VIC',
-    coordinates: [-38.5445, 143.9789],
+    coordinates: [-38.60, 143.97], // Offshore coordinates for marine API
     orientation: 220,
     breakType: 'beach',
     bottom: 'Sand/Rock',
@@ -375,7 +375,7 @@ export const surfSpots: SurfSpot[] = [
     id: 'winki-pop-inside',
     name: 'Winki Pop Inside',
     region: 'Surf Coast VIC',
-    coordinates: [-38.3761, 144.2848],
+    coordinates: [-38.42, 144.28], // Offshore coordinates for marine API
     orientation: 215,
     breakType: 'reef',
     bottom: 'Rock/Reef',
