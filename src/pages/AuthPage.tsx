@@ -10,6 +10,37 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Waves, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { z } from 'zod';
+
+// Validation schemas
+const signInSchema = z.object({
+  email: z.string().trim().email('Please enter a valid email address').max(255, 'Email is too long'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+const signUpSchema = z.object({
+  email: z.string().trim().email('Please enter a valid email address').max(255, 'Email is too long'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number'),
+  displayName: z.string().trim().max(100, 'Display name is too long').optional(),
+});
+
+const resetPasswordSchema = z.object({
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number'),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+const emailSchema = z.object({
+  email: z.string().trim().email('Please enter a valid email address').max(255, 'Email is too long'),
+});
 
 const AuthPage = () => {
   const [email, setEmail] = useState('');
@@ -48,8 +79,19 @@ const AuthPage = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const validation = signInSchema.safeParse({ email, password });
+    if (!validation.success) {
+      toast({
+        title: "Validation Error",
+        description: validation.error.errors[0].message,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setLoading(true);
-    const { error } = await signIn(email, password);
+    const { error } = await signIn(validation.data.email, password);
     setLoading(false);
     
     if (!error) {
@@ -59,8 +101,19 @@ const AuthPage = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const validation = signUpSchema.safeParse({ email, password, displayName: displayName || undefined });
+    if (!validation.success) {
+      toast({
+        title: "Validation Error",
+        description: validation.error.errors[0].message,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setLoading(true);
-    const { error } = await signUp(email, password, displayName);
+    const { error } = await signUp(validation.data.email, password, validation.data.displayName);
     setLoading(false);
     
     if (!error) {
@@ -70,8 +123,19 @@ const AuthPage = () => {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const validation = emailSchema.safeParse({ email: resetEmail });
+    if (!validation.success) {
+      toast({
+        title: "Validation Error",
+        description: validation.error.errors[0].message,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setLoading(true);
-    await resetPassword(resetEmail);
+    await resetPassword(validation.data.email);
     setLoading(false);
     setForgotPasswordOpen(false);
     setResetEmail('');
@@ -80,19 +144,11 @@ const AuthPage = () => {
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (newPassword !== confirmPassword) {
+    const validation = resetPasswordSchema.safeParse({ password: newPassword, confirmPassword });
+    if (!validation.success) {
       toast({
-        title: "Passwords don't match",
-        description: "Please make sure both passwords are the same.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters long.",
+        title: "Validation Error",
+        description: validation.error.errors[0].message,
         variant: "destructive",
       });
       return;
@@ -146,11 +202,11 @@ const AuthPage = () => {
                     <Input
                       id="new-password"
                       type={showNewPassword ? "text" : "password"}
-                      placeholder="Minimum 6 characters"
+                      placeholder="Minimum 8 characters"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       required
-                      minLength={6}
+                      minLength={8}
                       className="pr-10"
                     />
                     <Button
@@ -168,7 +224,7 @@ const AuthPage = () => {
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Password must be at least 6 characters long
+                    At least 8 characters with one uppercase letter and one number
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -344,8 +400,11 @@ const AuthPage = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      minLength={6}
+                      minLength={8}
                     />
+                    <p className="text-xs text-muted-foreground">
+                      At least 8 characters with one uppercase letter and one number
+                    </p>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? 'Creating account...' : 'Sign Up'}
