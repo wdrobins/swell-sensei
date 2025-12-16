@@ -410,15 +410,6 @@ const SpotDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-4 mt-8">
-        <Button size="lg" className="bg-gradient-ocean hover:opacity-90">
-          Plan Session Here
-        </Button>
-        <Button variant="outline" size="lg">
-          Add to Favorites
-        </Button>
-      </div>
 
       {/* Safety Footer */}
       <div className="mt-12 p-4 bg-warning/10 border border-warning/30 rounded-lg">
