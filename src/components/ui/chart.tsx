@@ -58,6 +58,36 @@ const ChartContainer = React.forwardRef<
 });
 ChartContainer.displayName = "Chart";
 
+// Sanitize color values to prevent CSS injection
+// Only allows valid CSS color formats: hex, rgb, rgba, hsl, hsla, and named colors
+const sanitizeColor = (color: string): string | null => {
+  if (!color || typeof color !== 'string') return null;
+  
+  // Remove whitespace and convert to lowercase for validation
+  const trimmed = color.trim();
+  
+  // Valid patterns for CSS colors
+  const validPatterns = [
+    /^#[0-9a-fA-F]{3,8}$/, // hex colors
+    /^rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)$/i, // rgb
+    /^rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*[\d.]+\s*\)$/i, // rgba
+    /^hsl\(\s*\d{1,3}\s*,\s*[\d.]+%?\s*,\s*[\d.]+%?\s*\)$/i, // hsl
+    /^hsla\(\s*\d{1,3}\s*,\s*[\d.]+%?\s*,\s*[\d.]+%?\s*,\s*[\d.]+\s*\)$/i, // hsla
+    /^[a-zA-Z]+$/, // named colors (e.g., red, blue)
+  ];
+  
+  if (validPatterns.some(pattern => pattern.test(trimmed))) {
+    return trimmed;
+  }
+  
+  return null;
+};
+
+// Sanitize key names to alphanumeric and hyphens only
+const sanitizeKey = (key: string): string => {
+  return key.replace(/[^a-zA-Z0-9-]/g, '');
+};
+
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(([_, config]) => config.theme || config.color);
 
@@ -65,26 +95,32 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null;
   }
 
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
-${colorConfig
-  .map(([key, itemConfig]) => {
-    const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
-    return color ? `  --color-${key}: ${color};` : null;
-  })
-  .join("\n")}
-}
-`,
-          )
-          .join("\n"),
-      }}
-    />
-  );
+  // Build CSS using safe DOM methods instead of dangerouslySetInnerHTML
+  const styleRef = React.useRef<HTMLStyleElement>(null);
+  
+  React.useEffect(() => {
+    if (!styleRef.current) return;
+    
+    const cssRules = Object.entries(THEMES)
+      .map(([theme, prefix]) => {
+        const variables = colorConfig
+          .map(([key, itemConfig]) => {
+            const rawColor = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
+            const color = rawColor ? sanitizeColor(rawColor) : null;
+            const safeKey = sanitizeKey(key);
+            return color ? `  --color-${safeKey}: ${color};` : null;
+          })
+          .filter(Boolean)
+          .join('\n');
+        
+        return `${prefix} [data-chart=${id}] {\n${variables}\n}`;
+      })
+      .join('\n');
+    
+    styleRef.current.textContent = cssRules;
+  }, [id, colorConfig]);
+
+  return <style ref={styleRef} />;
 };
 
 const ChartTooltip = RechartsPrimitive.Tooltip;

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -14,6 +14,37 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Map auth errors to safe, user-friendly messages
+const getSafeErrorMessage = (error: AuthError | Error | null, context: 'signin' | 'signup' | 'signout' | 'reset'): string => {
+  if (!error) return 'An unexpected error occurred. Please try again.';
+  
+  // Known safe error codes that can be shown to users
+  const safeErrorMap: Record<string, string> = {
+    'invalid_credentials': 'Invalid email or password.',
+    'user_not_found': 'Invalid email or password.',
+    'email_not_confirmed': 'Please verify your email before signing in.',
+    'user_already_exists': 'An account with this email already exists.',
+    'weak_password': 'Please choose a stronger password.',
+    'over_request_rate_limit': 'Too many attempts. Please try again later.',
+    'email_address_invalid': 'Please enter a valid email address.',
+  };
+  
+  // Check if we have a known error code
+  if ('code' in error && typeof error.code === 'string' && safeErrorMap[error.code]) {
+    return safeErrorMap[error.code];
+  }
+  
+  // Generic fallback messages based on context
+  const contextMessages: Record<string, string> = {
+    signin: 'Unable to sign in. Please check your credentials and try again.',
+    signup: 'Unable to create account. Please try again.',
+    signout: 'Unable to sign out. Please try again.',
+    reset: 'Unable to send reset email. Please try again.',
+  };
+  
+  return contextMessages[context] || 'An unexpected error occurred. Please try again.';
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -59,7 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         toast({
           title: "Sign up failed",
-          description: error.message,
+          description: getSafeErrorMessage(error, 'signup'),
           variant: "destructive",
         });
       } else {
@@ -73,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: getSafeErrorMessage(error, 'signup'),
         variant: "destructive",
       });
       return { error };
@@ -90,7 +121,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         toast({
           title: "Sign in failed",
-          description: error.message,
+          description: getSafeErrorMessage(error, 'signin'),
           variant: "destructive",
         });
       } else {
@@ -104,7 +135,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: getSafeErrorMessage(error, 'signin'),
         variant: "destructive",
       });
       return { error };
@@ -116,7 +147,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (error) {
       toast({
         title: "Error signing out",
-        description: error.message,
+        description: getSafeErrorMessage(error, 'signout'),
         variant: "destructive",
       });
     } else {
@@ -129,7 +160,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const resetPassword = async (email: string) => {
     try {
-  const resetPasswordRedirectUrl = `${window.location.origin}/auth`;
+      const resetPasswordRedirectUrl = `${window.location.origin}/auth`;
       
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: resetPasswordRedirectUrl,
@@ -138,7 +169,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         toast({
           title: "Password reset failed",
-          description: error.message,
+          description: getSafeErrorMessage(error, 'reset'),
           variant: "destructive",
         });
       } else {
@@ -152,7 +183,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: getSafeErrorMessage(error, 'reset'),
         variant: "destructive",
       });
       return { error };
