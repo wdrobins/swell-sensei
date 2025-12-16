@@ -1,8 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Calendar, Waves, Wind } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { Calendar, ArrowUp } from 'lucide-react';
+import { format, parseISO, isToday, isTomorrow } from 'date-fns';
 
 interface DailyForecast {
   date: string;
@@ -20,125 +19,110 @@ interface ForecastChartProps {
   dailyForecast: DailyForecast[];
 }
 
+// Get condition quality based on wave height and wind
+const getConditionColor = (waveHeight: number, windSpeed: number): string => {
+  if (waveHeight >= 1 && waveHeight <= 2 && windSpeed < 15) return 'bg-green-500';
+  if (waveHeight >= 0.5 && waveHeight <= 3 && windSpeed < 20) return 'bg-yellow-500';
+  return 'bg-orange-500';
+};
+
+// Format day label
+const formatDayLabel = (dateStr: string): string => {
+  const date = parseISO(dateStr);
+  if (isToday(date)) return 'Today';
+  if (isTomorrow(date)) return 'Tomorrow';
+  return format(date, 'EEE, d/M');
+};
+
+// Convert meters to feet and format as range
+const formatWaveRange = (min: number, max: number): string => {
+  const minFt = Math.round(min * 3.28084);
+  const maxFt = Math.round(max * 3.28084);
+  if (minFt === maxFt) return `${minFt}ft`;
+  return `${minFt}-${maxFt}ft`;
+};
+
 const ForecastChart: React.FC<ForecastChartProps> = ({ dailyForecast }) => {
-  // Transform data for the chart - convert meters to feet
-  const chartData = dailyForecast.map((day) => ({
-    date: format(parseISO(day.date), 'EEE'),
-    fullDate: format(parseISO(day.date), 'MMM d'),
-    waveHeight: Number((day.swellHeight * 3.28084).toFixed(1)),
-    maxWave: Number((day.maxWaveHeight * 3.28084).toFixed(1)),
-    minWave: Number((day.minWaveHeight * 3.28084).toFixed(1)),
-    windSpeed: Math.round(day.windSpeed),
-    swellPeriod: Math.round(day.swellPeriod),
+  // Take first 7 days
+  const forecastData = dailyForecast.slice(0, 7).map((day) => ({
+    date: day.date,
+    dayLabel: formatDayLabel(day.date),
+    waveRange: formatWaveRange(day.minWaveHeight, day.maxWaveHeight),
+    windDirection: day.windDirection,
+    windSpeed: day.windSpeed,
+    conditionColor: getConditionColor(day.swellHeight, day.windSpeed),
+    swellDirection: day.swellDirection,
   }));
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg p-3 shadow-lg">
-          <p className="font-semibold text-foreground mb-2">{data.fullDate}</p>
-          <div className="space-y-1 text-sm">
-            <div className="flex items-center gap-2">
-              <Waves className="h-3 w-3 text-accent" />
-              <span className="text-muted-foreground">Waves:</span>
-              <span className="font-medium">{data.minWave}-{data.maxWave}ft</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Wind className="h-3 w-3 text-primary" />
-              <span className="text-muted-foreground">Wind:</span>
-              <span className="font-medium">{data.windSpeed} kts</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">Period:</span>
-              <span className="font-medium">{data.swellPeriod}s</span>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
-    <Card className="shadow-float">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <Card className="shadow-float overflow-hidden">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <Calendar className="h-5 w-5 text-primary" />
           7-Day Forecast
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="waveGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--accent))" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="hsl(var(--accent))" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="windGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-              <XAxis 
-                dataKey="date" 
-                tick={{ fontSize: 12 }} 
-                className="text-muted-foreground"
-                axisLine={{ className: 'stroke-muted' }}
-                tickLine={{ className: 'stroke-muted' }}
+      <CardContent className="p-0">
+        <div className="relative">
+          {/* Wave illustration background */}
+          <div className="absolute left-0 top-0 bottom-8 w-24 bg-gradient-to-r from-accent/20 to-transparent pointer-events-none">
+            <svg viewBox="0 0 100 100" className="w-full h-full opacity-30" preserveAspectRatio="none">
+              <path
+                d="M0,50 Q25,30 50,50 T100,50 L100,100 L0,100 Z"
+                fill="hsl(var(--accent))"
               />
-              <YAxis 
-                tick={{ fontSize: 12 }} 
-                className="text-muted-foreground"
-                axisLine={{ className: 'stroke-muted' }}
-                tickLine={{ className: 'stroke-muted' }}
+              <path
+                d="M0,60 Q25,40 50,60 T100,60 L100,100 L0,100 Z"
+                fill="hsl(var(--accent))"
+                opacity="0.5"
               />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend 
-                wrapperStyle={{ fontSize: '12px' }}
-                formatter={(value) => (
-                  <span className="text-muted-foreground">
-                    {value === 'waveHeight' ? 'Wave Height (ft)' : 'Wind Speed (kts)'}
-                  </span>
-                )}
+            </svg>
+          </div>
+          
+          {/* Forecast grid */}
+          <div className="grid grid-cols-7 relative z-10">
+            {forecastData.map((day, index) => (
+              <div
+                key={day.date}
+                className={`flex flex-col items-center py-4 px-2 ${
+                  index === 0 ? 'bg-primary/5' : ''
+                } ${index < forecastData.length - 1 ? 'border-r border-border/30' : ''}`}
+              >
+                {/* Day label */}
+                <p className="text-xs font-medium text-muted-foreground mb-2 text-center">
+                  {day.dayLabel}
+                </p>
+                
+                {/* Wave height */}
+                <p className="text-lg font-bold text-accent mb-3">
+                  {day.waveRange}
+                </p>
+                
+                {/* Wind direction arrows */}
+                <div className="flex gap-0.5 mb-3">
+                  {[0, 1, 2].map((i) => (
+                    <ArrowUp
+                      key={i}
+                      className="h-4 w-4 text-foreground"
+                      style={{
+                        transform: `rotate(${day.windDirection + (i - 1) * 15}deg)`,
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Condition color bar */}
+          <div className="flex h-2">
+            {forecastData.map((day) => (
+              <div
+                key={day.date}
+                className={`flex-1 ${day.conditionColor}`}
               />
-              <Area
-                type="monotone"
-                dataKey="waveHeight"
-                name="waveHeight"
-                stroke="hsl(var(--accent))"
-                strokeWidth={2}
-                fill="url(#waveGradient)"
-              />
-              <Area
-                type="monotone"
-                dataKey="windSpeed"
-                name="windSpeed"
-                stroke="hsl(var(--primary))"
-                strokeWidth={2}
-                fill="url(#windGradient)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-        
-        {/* Daily Summary Cards */}
-        <div className="grid grid-cols-7 gap-1 mt-4">
-          {chartData.map((day, index) => (
-            <div
-              key={index}
-              className={`text-center p-2 rounded-lg ${
-                index === 0 ? 'bg-primary/10 border border-primary/20' : 'bg-muted/30'
-              }`}
-            >
-              <p className="text-xs font-medium text-foreground">{day.date}</p>
-              <p className="text-sm font-bold text-accent">{day.waveHeight}ft</p>
-              <p className="text-xs text-muted-foreground">{day.windSpeed}kts</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </CardContent>
     </Card>
