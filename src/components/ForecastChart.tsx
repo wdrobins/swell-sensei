@@ -17,6 +17,8 @@ interface DailyForecast {
 
 interface ForecastChartProps {
   dailyForecast: DailyForecast[];
+  selectedDayIndex: number;
+  onSelectDay: (index: number) => void;
 }
 
 // Get condition quality based on wave height and wind
@@ -42,7 +44,7 @@ const formatWaveRange = (min: number, max: number): string => {
   return `${minFt}-${maxFt}ft`;
 };
 
-const ForecastChart: React.FC<ForecastChartProps> = ({ dailyForecast }) => {
+const ForecastChart: React.FC<ForecastChartProps> = ({ dailyForecast, selectedDayIndex, onSelectDay }) => {
   // Take first 7 days
   const forecastData = dailyForecast.slice(0, 7).map((day) => ({
     date: day.date,
@@ -82,19 +84,24 @@ const ForecastChart: React.FC<ForecastChartProps> = ({ dailyForecast }) => {
           {/* Forecast grid */}
           <div className="grid grid-cols-7 relative z-10">
             {forecastData.map((day, index) => (
-              <div
+              <button
                 key={day.date}
-                className={`flex flex-col items-center py-4 px-2 ${
-                  index === 0 ? 'bg-primary/5' : ''
+                onClick={() => onSelectDay(index)}
+                className={`flex flex-col items-center py-4 px-2 transition-all cursor-pointer hover:bg-primary/10 ${
+                  index === selectedDayIndex ? 'bg-primary/15 ring-2 ring-primary ring-inset' : ''
                 } ${index < forecastData.length - 1 ? 'border-r border-border/30' : ''}`}
               >
                 {/* Day label */}
-                <p className="text-xs font-medium text-muted-foreground mb-2 text-center">
+                <p className={`text-xs font-medium mb-2 text-center ${
+                  index === selectedDayIndex ? 'text-primary' : 'text-muted-foreground'
+                }`}>
                   {day.dayLabel}
                 </p>
                 
                 {/* Wave height */}
-                <p className="text-lg font-bold text-accent mb-3">
+                <p className={`text-lg font-bold mb-3 ${
+                  index === selectedDayIndex ? 'text-primary' : 'text-accent'
+                }`}>
                   {day.waveRange}
                 </p>
                 
@@ -103,23 +110,23 @@ const ForecastChart: React.FC<ForecastChartProps> = ({ dailyForecast }) => {
                   {[0, 1, 2].map((i) => (
                     <ArrowUp
                       key={i}
-                      className="h-4 w-4 text-foreground"
+                      className={`h-4 w-4 ${index === selectedDayIndex ? 'text-primary' : 'text-foreground'}`}
                       style={{
                         transform: `rotate(${day.windDirection + (i - 1) * 15}deg)`,
                       }}
                     />
                   ))}
                 </div>
-              </div>
+              </button>
             ))}
           </div>
           
           {/* Condition color bar */}
           <div className="flex h-2">
-            {forecastData.map((day) => (
+            {forecastData.map((day, index) => (
               <div
                 key={day.date}
-                className={`flex-1 ${day.conditionColor}`}
+                className={`flex-1 ${day.conditionColor} ${index === selectedDayIndex ? 'ring-2 ring-primary' : ''}`}
               />
             ))}
           </div>
