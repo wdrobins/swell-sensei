@@ -81,15 +81,15 @@ const PlanPage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Generate mock weekly forecast scores
+  // Generate mock weekly forecast scores (1-10 scale)
   const weeklyForecast = [
-    { score: 75, conditions: '3-4ft Clean', quality: 'Good', swellHeight: 1.1, swellPeriod: 12, windSpeed: 12 },
-    { score: 85, conditions: '4-5ft Offshore', quality: 'Excellent', swellHeight: 1.4, swellPeriod: 14, windSpeed: 8 },
-    { score: 45, conditions: '2-3ft Onshore', quality: 'Fair', swellHeight: 0.8, swellPeriod: 9, windSpeed: 22 },
-    { score: 65, conditions: '3-4ft Cross', quality: 'Good', swellHeight: 1.0, swellPeriod: 11, windSpeed: 15 },
-    { score: 30, conditions: '1-2ft Messy', quality: 'Poor', swellHeight: 0.5, swellPeriod: 7, windSpeed: 28 },
-    { score: 70, conditions: '3-4ft Clean', quality: 'Good', swellHeight: 1.0, swellPeriod: 12, windSpeed: 10 },
-    { score: 80, conditions: '4-5ft Glass', quality: 'Excellent', swellHeight: 1.3, swellPeriod: 15, windSpeed: 5 }
+    { score: 8, conditions: '3-4ft Clean', quality: 'Good', swellHeight: 1.1, swellPeriod: 12, windSpeed: 12 },
+    { score: 9, conditions: '4-5ft Offshore', quality: 'Excellent', swellHeight: 1.4, swellPeriod: 14, windSpeed: 8 },
+    { score: 5, conditions: '2-3ft Onshore', quality: 'Fair', swellHeight: 0.8, swellPeriod: 9, windSpeed: 22 },
+    { score: 7, conditions: '3-4ft Cross', quality: 'Good', swellHeight: 1.0, swellPeriod: 11, windSpeed: 15 },
+    { score: 3, conditions: '1-2ft Messy', quality: 'Poor', swellHeight: 0.5, swellPeriod: 7, windSpeed: 28 },
+    { score: 7, conditions: '3-4ft Clean', quality: 'Good', swellHeight: 1.0, swellPeriod: 12, windSpeed: 10 },
+    { score: 8, conditions: '4-5ft Glass', quality: 'Excellent', swellHeight: 1.3, swellPeriod: 15, windSpeed: 5 }
   ];
 
   // Fetch user profile
@@ -291,9 +291,9 @@ const PlanPage: React.FC = () => {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-success';
-    if (score >= 60) return 'text-accent';
-    if (score >= 40) return 'text-warning';
+    if (score >= 8) return 'text-success';
+    if (score >= 6) return 'text-accent';
+    if (score >= 4) return 'text-warning';
     return 'text-destructive';
   };
 
@@ -436,7 +436,7 @@ const PlanPage: React.FC = () => {
                     <div className={`text-2xl font-bold mb-1 ${
                       isSelected ? '' : getScoreColor(day.score)
                     }`}>
-                      {day.score}
+                      {day.score}/10
                     </div>
                     <div className="text-xs opacity-80 mb-1">{day.quality}</div>
                     <div className="text-xs opacity-70">{day.conditions}</div>
