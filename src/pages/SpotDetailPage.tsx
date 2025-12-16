@@ -134,6 +134,71 @@ const SpotDetailPage: React.FC = () => {
 
         {/* Spot Details */}
         <div className="space-y-6">
+          {/* Current Forecast */}
+          <Card className="shadow-float bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Cloud className="h-5 w-5 text-primary" />
+                Current Forecast
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              ) : forecast ? (
+                <>
+                  {/* Wave Height */}
+                  <div className="flex items-center justify-between p-3 bg-background/50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Waves className="h-5 w-5 text-accent" />
+                      <span className="text-sm text-muted-foreground">Wave Height</span>
+                    </div>
+                    <span className="text-2xl font-bold text-primary">
+                      {(forecast.swellHeight * 3.28084).toFixed(1)}ft
+                    </span>
+                  </div>
+                  
+                  {/* Swell Period */}
+                  <div className="flex items-center justify-between p-3 bg-background/50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-accent" />
+                      <span className="text-sm text-muted-foreground">Swell Period</span>
+                    </div>
+                    <span className="text-xl font-bold">{forecast.swellPeriod.toFixed(0)}s</span>
+                  </div>
+                  
+                  {/* Swell Direction */}
+                  <div className="flex items-center justify-between p-3 bg-background/50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Compass className="h-5 w-5 text-accent" />
+                      <span className="text-sm text-muted-foreground">Swell Direction</span>
+                    </div>
+                    <span className="text-lg font-medium">
+                      {forecast.swellDirection}° ({degreesArrayToCompass([forecast.swellDirection])})
+                    </span>
+                  </div>
+                  
+                  {/* Wind */}
+                  <div className="flex items-center justify-between p-3 bg-background/50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Wind className="h-5 w-5 text-primary" />
+                      <span className="text-sm text-muted-foreground">Wind</span>
+                    </div>
+                    <span className="text-lg font-medium">
+                      {Math.round(forecast.windSpeed)}kts {degreesArrayToCompass([forecast.windDirection])}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <p className="text-center text-muted-foreground">No forecast data available</p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Basic Info */}
           <Card className="shadow-float">
             <CardHeader>
