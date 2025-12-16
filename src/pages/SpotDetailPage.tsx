@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +19,7 @@ import {
 const SpotDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const spot = surfSpots.find(s => s.id === id);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   
   // Fetch real forecast data if spot exists
   const { data: forecastData, isLoading, isError } = useMarineForecast(
@@ -45,11 +46,26 @@ const SpotDetailPage: React.FC = () => {
     );
   }
 
+  // Get selected day's forecast data
+  const selectedDayData = forecastData?.daily?.[selectedDayIndex];
+
   // Use real forecast data if available, otherwise fallback to mock
   let forecast: ForecastData | undefined;
   let isRealData = false;
   
-  if (forecastData?.current && !isError) {
+  if (selectedDayData && !isError) {
+    isRealData = true;
+    forecast = {
+      timestamp: selectedDayData.date,
+      swellHeight: selectedDayData.swellHeight || selectedDayData.waveHeight,
+      swellPeriod: selectedDayData.swellPeriod,
+      swellDirection: selectedDayData.swellDirection,
+      windSpeed: selectedDayData.windSpeed,
+      windDirection: selectedDayData.windDirection,
+      tideLevel: 1.0,
+      confidence: 0.85
+    };
+  } else if (forecastData?.current && !isError) {
     isRealData = true;
     forecast = {
       timestamp: forecastData.current.timestamp,
@@ -105,6 +121,26 @@ const SpotDetailPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* 7-Day Forecast Chart - Full width at top */}
+      {isLoading ? (
+        <Card className="shadow-float mb-6">
+          <CardHeader>
+            <Skeleton className="h-6 w-40" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-32 w-full" />
+          </CardContent>
+        </Card>
+      ) : forecastData?.daily && forecastData.daily.length > 0 ? (
+        <div className="mb-6">
+          <ForecastChart 
+            dailyForecast={forecastData.daily} 
+            selectedDayIndex={selectedDayIndex}
+            onSelectDay={setSelectedDayIndex}
+          />
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Fit Score - Full width on mobile, spans 2 cols on desktop */}
@@ -344,21 +380,6 @@ const SpotDetailPage: React.FC = () => {
           </Card>
         </div>
 
-        {/* 7-Day Forecast Chart - Full width */}
-        <div className="lg:col-span-3">
-          {isLoading ? (
-            <Card className="shadow-float">
-              <CardHeader>
-                <Skeleton className="h-6 w-40" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-64 w-full" />
-              </CardContent>
-            </Card>
-          ) : forecastData?.daily && forecastData.daily.length > 0 ? (
-            <ForecastChart dailyForecast={forecastData.daily} />
-          ) : null}
-        </div>
 
         {/* Local Knowledge - Full width */}
         <div className="lg:col-span-3">
