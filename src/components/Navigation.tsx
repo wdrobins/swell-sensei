@@ -26,7 +26,6 @@ const Navigation: React.FC = () => {
             </div>
             <div className="hidden sm:block">
               <span className="font-bold text-foreground">🏄‍♂️</span>
-              <Badge variant="secondary" className="ml-2 text-xs">Beta</Badge>
             </div>
           </Link>
 
