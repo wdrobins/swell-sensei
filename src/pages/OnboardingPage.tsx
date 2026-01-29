@@ -440,3 +440,4 @@ const OnboardingPage: React.FC = () => {
 };
 
 export default OnboardingPage;
+
