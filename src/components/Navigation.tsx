@@ -8,7 +8,7 @@ import { Waves, MapPin, User, LogOut, LogIn } from 'lucide-react';
 const Navigation: React.FC = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
-  
+
   const navItems = [
     { href: '/', label: 'Dashboard', icon: Waves },
     { href: '/spots', label: 'Spots', icon: MapPin },
@@ -24,8 +24,11 @@ const Navigation: React.FC = () => {
             <div className="w-8 h-8 bg-gradient-ocean rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
               <Waves className="h-5 w-5 text-white" />
             </div>
-            <div className="hidden sm:block">
-              <span className="font-bold text-foreground">🏄‍♂️</span>
+            <div className="hidden sm:flex items-center gap-2">
+              <span className="font-bold text-foreground">Afterglow</span>
+              <Badge variant="secondary" className="text-[10px] tracking-wide uppercase">
+                Afterglow App
+              </Badge>
             </div>
           </Link>
 
@@ -34,7 +37,7 @@ const Navigation: React.FC = () => {
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.href;
-              
+
               return (
                 <Button
                   key={item.href}
@@ -42,8 +45,8 @@ const Navigation: React.FC = () => {
                   variant={isActive ? 'default' : 'ghost'}
                   size="sm"
                   className={`transition-all duration-200 ${
-                    isActive 
-                      ? 'bg-primary text-primary-foreground shadow-wave' 
+                    isActive
+                      ? 'bg-primary text-primary-foreground shadow-wave'
                       : 'hover:bg-accent/20 hover:text-accent-foreground'
                   }`}
                 >
@@ -61,7 +64,7 @@ const Navigation: React.FC = () => {
             {navItems.slice(0, 3).map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.href;
-              
+
               return (
                 <Button
                   key={item.href}
@@ -80,9 +83,9 @@ const Navigation: React.FC = () => {
           {/* Auth Actions */}
           <div className="flex items-center gap-2">
             {user ? (
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={signOut}
                 className="text-muted-foreground hover:text-foreground"
               >
@@ -90,10 +93,10 @@ const Navigation: React.FC = () => {
                 <span className="hidden sm:inline">Sign Out</span>
               </Button>
             ) : (
-              <Button 
+              <Button
                 asChild
-                variant="ghost" 
-                size="sm" 
+                variant="ghost"
+                size="sm"
                 className="text-muted-foreground hover:text-foreground"
               >
                 <Link to="/auth">

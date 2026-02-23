@@ -1,0 +1,18 @@
+{
+  "name": "Afterglow",
+  "short_name": "Afterglow",
+  "description": "Personalised surf forecasts, spot recommendations, and safety guidance by Afterglow Surfboards.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#0f172a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48 32x32 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { addDays, format } from 'date-fns';
+import { SITE_CONFIG } from '@/lib/siteConfig';
 
 // Get time-of-day label and info
 const getTimeOfDayInfo = () => {
@@ -117,18 +118,26 @@ const Index = () => {
               <Waves className="h-16 w-16 mx-auto mb-4" />
             </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-              Surf Daddy
+              Afterglow
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-white/90">
               Get personalized surf recommendations and safety guidance
               based on your skill level and current conditions
             </p>
+            <div className="mb-6 flex justify-center">
+              <Badge variant="secondary" className="bg-white/15 text-white border border-white/20 backdrop-blur-sm px-3 py-1">
+                Live on {new URL(SITE_CONFIG.appUrl).host}
+              </Badge>
+            </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 shadow-float">
                 <Link to="/onboarding">Setup Profile</Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="border-white/80 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm">
                 <Link to="/spots">Find Your Wave</Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="border-white/60 bg-transparent text-white hover:bg-white/10">
+                <a href={SITE_CONFIG.appUrl} target="_blank" rel="noreferrer">Open on Phone</a>
               </Button>
             </div>
           </div>
