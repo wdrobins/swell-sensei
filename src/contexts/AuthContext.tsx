@@ -76,7 +76,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, displayName?: string) => {
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = new URL(import.meta.env.BASE_URL, window.location.origin).toString();
       
       const { error } = await supabase.auth.signUp({
         email,
@@ -164,7 +164,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const resetPassword = async (email: string) => {
     try {
-      const resetPasswordRedirectUrl = `${window.location.origin}/auth`;
+      const resetPasswordRedirectUrl = new URL(import.meta.env.BASE_URL, window.location.origin).toString();
       
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: resetPasswordRedirectUrl,

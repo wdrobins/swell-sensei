@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navigation from "./components/Navigation";
@@ -21,6 +22,19 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const RootPage = () => {
+  const navigate = useNavigate();
+  const isPasswordRecovery = new URLSearchParams(window.location.hash.substring(1)).get('type') === 'recovery';
+
+  useEffect(() => {
+    if (isPasswordRecovery) {
+      navigate('/auth', { replace: true });
+    }
+  }, [isPasswordRecovery, navigate]);
+
+  return isPasswordRecovery ? null : <Index />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -32,7 +46,7 @@ const App = () => (
             <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
               <Navigation />
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<RootPage />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/spots" element={<SpotsPage />} />
                 <Route path="/spots/:id" element={<SpotDetailPage />} />
