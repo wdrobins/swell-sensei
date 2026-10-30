@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Waves, MapPin, User, LogOut, LogIn } from 'lucide-react';
+import { Waves, MapPin, User, LogOut, LogIn, CalendarDays, ChartNoAxesCombined } from 'lucide-react';
 
 const Navigation: React.FC = () => {
   const location = useLocation();
@@ -12,6 +12,8 @@ const Navigation: React.FC = () => {
   const navItems = [
     { href: '/', label: 'Dashboard', icon: Waves },
     { href: '/spots', label: 'Spots', icon: MapPin },
+    { href: '/plan', label: 'Plan', icon: CalendarDays },
+    { href: '/logs', label: 'Logs', icon: ChartNoAxesCombined },
     { href: '/profile', label: 'Profile', icon: User },
   ];
 
@@ -61,7 +63,7 @@ const Navigation: React.FC = () => {
 
           {/* Mobile Navigation */}
           <div className="md:hidden flex items-center space-x-2">
-            {navItems.slice(0, 3).map((item) => {
+            {navItems.slice(0, 4).map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.href;
 
@@ -72,7 +74,7 @@ const Navigation: React.FC = () => {
                   variant={isActive ? 'default' : 'ghost'}
                   size="sm"
                 >
-                  <Link to={item.href}>
+                  <Link to={item.href} aria-label={item.label}>
                     <Icon className="h-4 w-4" />
                   </Link>
                 </Button>

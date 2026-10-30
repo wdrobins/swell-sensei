@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import GoalsTracker from '@/components/GoalsTracker';
 import SkillProgressionChart from '@/components/SkillProgressionChart';
@@ -21,7 +22,7 @@ import MilestoneBadges from '@/components/MilestoneBadges';
 const ProfilePage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Tables<'profiles'> | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -30,11 +31,7 @@ const ProfilePage: React.FC = () => {
     preferred_wave_size: ''
   });
 
-  useEffect(() => {
-    fetchProfile();
-  }, [user]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     if (!user) return;
     
     const { data, error } = await supabase
@@ -53,7 +50,11 @@ const ProfilePage: React.FC = () => {
         preferred_wave_size: data.preferred_wave_size || ''
       });
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    void fetchProfile();
+  }, [fetchProfile]);
 
   const handleSave = async () => {
     if (!user) return;

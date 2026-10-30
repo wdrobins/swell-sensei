@@ -91,15 +91,11 @@ const sanitizeKey = (key: string): string => {
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(([_, config]) => config.theme || config.color);
 
-  if (!colorConfig.length) {
-    return null;
-  }
-
   // Build CSS using safe DOM methods instead of dangerouslySetInnerHTML
   const styleRef = React.useRef<HTMLStyleElement>(null);
   
   React.useEffect(() => {
-    if (!styleRef.current) return;
+    if (!styleRef.current || !colorConfig.length) return;
     
     const cssRules = Object.entries(THEMES)
       .map(([theme, prefix]) => {
@@ -119,6 +115,10 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     
     styleRef.current.textContent = cssRules;
   }, [id, colorConfig]);
+
+  if (!colorConfig.length) {
+    return null;
+  }
 
   return <style ref={styleRef} />;
 };

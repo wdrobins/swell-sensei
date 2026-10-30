@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Badge, type BadgeProps } from '@/components/ui/badge';
 import FitScoreCard from '@/components/FitScoreCard';
 import SpotCard from '@/components/SpotCard';
-import { surfSpots, mockForecast, mockSurferProfile, ForecastData } from '@/lib/mockData';
+import { surfSpots, mockForecast, ForecastData } from '@/lib/mockData';
 import { calculateFitScore } from '@/lib/fitScoring';
 import { 
   Waves, TrendingUp, Clock, MapPin, 
@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { addDays, format } from 'date-fns';
-import { SITE_CONFIG } from '@/lib/siteConfig';
+import { useSurferProfile } from '@/hooks/useSurferProfile';
 
 // Get time-of-day label and info
 const getTimeOfDayInfo = () => {
@@ -34,9 +34,16 @@ const getTimeOfDayInfo = () => {
   }
 };
 
+type TimeAdjustedResult = {
+  spot: (typeof surfSpots)[number];
+  result: ReturnType<typeof calculateFitScore>;
+  forecast: ForecastData;
+};
+
 const Index = () => {
   const timeInfo = getTimeOfDayInfo();
   const currentHour = new Date().getHours();
+  const { surferProfile, isLoading: isProfileLoading } = useSurferProfile();
   
   // Calculate time-adjusted forecasts for all spots
   const timeAdjustedResults = useMemo(() => {
@@ -63,26 +70,26 @@ const Index = () => {
         windDirection: currentHour <= 10 ? 30 + spotVariation * 30 : 150 + spotVariation * 60,
       };
       
-      const result = calculateFitScore(spot, forecast, mockSurferProfile);
+      const result = calculateFitScore(spot, forecast, surferProfile);
       return { spot, result, forecast };
-    }).filter(Boolean) as Array<{ spot: any; result: any; forecast: ForecastData }>;
-  }, [currentHour]);
+    }).filter((result): result is TimeAdjustedResult => result !== null);
+  }, [currentHour, surferProfile]);
 
   // Find best spot for right now
   const bestSpotNow = useMemo(() => {
     return timeAdjustedResults.reduce((best, current) => 
       !best || current.result.score > best.result.score ? current : best
-    , null as any);
+    , null as TimeAdjustedResult | null);
   }, [timeAdjustedResults]);
 
   // Calculate fit scores for recommended spots based on skill level and experience
   const skillLevelMap = { 'beginner': 1, 'intermediate': 2, 'advanced': 3, 'expert': 4 };
   const userSkillMap = { 'waist': 1, 'shoulder': 2, 'head': 3, 'overhead': 4, 'double-overhead': 5 };
-  const userSkillLevel = userSkillMap[mockSurferProfile.comfortableWaveSize] || 2;
+  const userSkillLevel = userSkillMap[surferProfile.comfortableWaveSize] || 1;
   
   const recommendedSpotResults = timeAdjustedResults
     .filter(item => {
-      const matchesExperience = mockSurferProfile.experienceTypes.includes(item.spot.breakType);
+      const matchesExperience = surferProfile.experienceTypes.includes(item.spot.breakType);
       const spotSkillLevel = skillLevelMap[item.spot.skillLevel as keyof typeof skillLevelMap];
       const matchesSkill = spotSkillLevel <= userSkillLevel + 1;
       return matchesExperience && matchesSkill;
@@ -121,14 +128,9 @@ const Index = () => {
               Afterglow
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-white/90">
-              Get personalized surf recommendations and safety guidance
-              based on your skill level and current conditions
+              Get a profile-based example score, then open live forecasts before making a surf decision.
             </p>
-            <div className="mb-6 flex justify-center">
-              <Badge variant="secondary" className="bg-white/15 text-white border border-white/20 backdrop-blur-sm px-3 py-1">
-                Live on {new URL(SITE_CONFIG.appUrl).host}
-              </Badge>
-            </div>
+            {isProfileLoading && <p className="mb-6 text-sm text-white/80">Loading your profile…</p>}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 shadow-float">
                 <Link to="/onboarding">Setup Profile</Link>
@@ -136,9 +138,7 @@ const Index = () => {
               <Button asChild variant="outline" size="lg" className="border-white/80 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm">
                 <Link to="/spots">Find Your Wave</Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="border-white/60 bg-transparent text-white hover:bg-white/10">
-                <a href={SITE_CONFIG.appUrl} target="_blank" rel="noreferrer">Open on Phone</a>
-              </Button>
+
             </div>
           </div>
         </div>
@@ -162,7 +162,7 @@ const Index = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-primary" />
-                Today's Conditions
+                Today's Conditions (example)
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -213,19 +213,19 @@ const Index = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-primary" />
-                7-Day Forecast — Bells Beach
+                7-Day Example Outlook — Bells Beach
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
                 {[
-                  { score: 7, conditions: '2ft Clean', color: 'accent' },
-                  { score: 9, conditions: '3ft Offshore', color: 'success' },
-                  { score: 5, conditions: '2ft Onshore', color: 'warning' },
-                  { score: 6, conditions: '2-3ft Cross', color: 'accent' },
-                  { score: 3, conditions: '1ft Messy', color: 'destructive' },
-                  { score: 7, conditions: '2ft Clean', color: 'accent' },
-                  { score: 8, conditions: '3ft Glass', color: 'success' }
+                  { score: 7, conditions: '2ft Clean', color: 'accent' as BadgeProps['variant'] },
+                  { score: 9, conditions: '3ft Offshore', color: 'success' as BadgeProps['variant'] },
+                  { score: 5, conditions: '2ft Onshore', color: 'warning' as BadgeProps['variant'] },
+                  { score: 6, conditions: '2-3ft Cross', color: 'accent' as BadgeProps['variant'] },
+                  { score: 3, conditions: '1ft Messy', color: 'destructive' as BadgeProps['variant'] },
+                  { score: 7, conditions: '2ft Clean', color: 'accent' as BadgeProps['variant'] },
+                  { score: 8, conditions: '3ft Glass', color: 'success' as BadgeProps['variant'] }
                 ].map((forecast, index) => {
                   const date = addDays(new Date(), index);
                   const dayLabel = index === 0 ? 'Today' : format(date, 'EEE');
@@ -236,7 +236,7 @@ const Index = () => {
                       <div className="text-sm font-medium mb-1">{dayLabel}</div>
                       <div className="text-xs text-muted-foreground mb-1">{dateLabel}</div>
                       <div className="text-2xl font-bold mb-1">{forecast.score}/10</div>
-                      <Badge variant={forecast.color as any} className="text-xs">
+                      <Badge variant={forecast.color} className="text-xs">
                         {forecast.conditions}
                       </Badge>
                     </Card>
@@ -246,7 +246,7 @@ const Index = () => {
               
               <div className="mt-4 pt-4 border-t">
                 <p className="text-sm text-muted-foreground text-center">
-                  Tuesday looks like the best day this week! Plan ahead for optimal conditions.
+                  Example conditions only. Use the Spots page for live Open-Meteo forecasts and always check local conditions before surfing.
                 </p>
               </div>
             </CardContent>

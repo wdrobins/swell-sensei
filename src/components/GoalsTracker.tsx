@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,11 +35,7 @@ const GoalsTracker: React.FC = () => {
     target_progress: 10
   });
 
-  useEffect(() => {
-    fetchGoals();
-  }, [user]);
-
-  const fetchGoals = async () => {
+  const fetchGoals = useCallback(async () => {
     if (!user) return;
 
     const { data, error } = await supabase
@@ -53,7 +49,11 @@ const GoalsTracker: React.FC = () => {
     } else {
       setGoals(data || []);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    void fetchGoals();
+  }, [fetchGoals]);
 
   const handleCreateGoal = async () => {
     if (!user || !newGoal.goal_type || !newGoal.target_value) {

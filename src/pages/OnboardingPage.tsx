@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   ChevronLeft, ChevronRight, User, Waves, 
   Target, MapPin, CheckCircle2 
@@ -14,9 +16,11 @@ import {
 
 const OnboardingPage: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 5;
+  const totalSteps = 2;
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -43,15 +47,39 @@ const OnboardingPage: React.FC = () => {
     'Never'
   ];
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Complete onboarding
-      toast({
-        title: "Profile Created!",
-        description: "Your surf profile has been set up successfully.",
-      });
+      if (!user) return;
+      if (!formData.name.trim() || !formData.comfortableWaveSize) {
+        toast({ title: 'Complete your profile', description: 'Please add your name and comfortable wave size before continuing.', variant: 'destructive' });
+        return;
+      }
+
+      const years = formData.yearsSurfing ? Number(formData.yearsSurfing) : 0;
+      const skillLevel = formData.surfFrequency === 'Never' || years === 0
+        ? 'beginner'
+        : years >= 10 ? 'advanced'
+        : years >= 3 ? 'intermediate'
+        : 'beginner';
+
+      setIsSaving(true);
+      const { data: savedProfile, error } = await supabase.from('profiles').upsert({
+        user_id: user.id,
+        display_name: formData.name.trim(),
+        experience_years: years,
+        preferred_wave_size: formData.comfortableWaveSize,
+        skill_level: skillLevel,
+      }, { onConflict: 'user_id' }).select('user_id, skill_level, experience_years, preferred_wave_size').single();
+      setIsSaving(false);
+
+      if (error || !savedProfile) {
+        toast({ title: 'Could not save your profile', description: 'Please try again. Your answers are still on this screen.', variant: 'destructive' });
+        return;
+      }
+
+      toast({ title: 'Profile saved', description: 'Your recommendations now use your saved experience and wave comfort.' });
       navigate('/');
     }
   };
@@ -283,7 +311,7 @@ const OnboardingPage: React.FC = () => {
           </div>
         );
 
-      case 5:
+      case 5: {
         const goalOptions = [
           'Improve tube riding',
           'Surf bigger waves',
@@ -362,6 +390,7 @@ const OnboardingPage: React.FC = () => {
             </div>
           </div>
         );
+      }
 
       default:
         return null;
@@ -419,9 +448,10 @@ const OnboardingPage: React.FC = () => {
               
               <Button
                 onClick={handleNext}
+                disabled={isSaving}
                 className="flex items-center gap-2"
               >
-                {currentStep === totalSteps ? 'Complete' : 'Next'}
+                {isSaving ? 'Saving…' : currentStep === totalSteps ? 'Complete' : 'Next'}
                 {currentStep < totalSteps && <ChevronRight className="h-4 w-4" />}
               </Button>
             </div>

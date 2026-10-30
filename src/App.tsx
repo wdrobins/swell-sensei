@@ -13,6 +13,9 @@ import SpotDetailPage from "./pages/SpotDetailPage";
 import ProfilePage from "./pages/ProfilePage";
 import OnboardingPage from "./pages/OnboardingPage";
 import AuthPage from "./pages/AuthPage";
+import PlanPage from "./pages/PlanPage";
+import LogsPage from "./pages/LogsPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 
 import NotFound from "./pages/NotFound";
 
@@ -35,7 +38,10 @@ const App = () => (
                 <Route path="/spots/:id" element={<SpotDetailPage />} />
                 
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                <Route path="/onboarding" element={<OnboardingPage />} />
+                <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+                <Route path="/plan" element={<ProtectedRoute><PlanPage /></ProtectedRoute>} />
+                <Route path="/logs" element={<ProtectedRoute><LogsPage /></ProtectedRoute>} />
+                <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

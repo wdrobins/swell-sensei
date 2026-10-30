@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import FitScoreCard from '@/components/FitScoreCard';
 import ForecastChart from '@/components/ForecastChart';
-import { surfSpots, mockForecast, mockSurferProfile, ForecastData } from '@/lib/mockData';
+import { surfSpots, ForecastData } from '@/lib/mockData';
 import { calculateFitScore } from '@/lib/fitScoring';
 import { useMarineForecast } from '@/hooks/useMarineForecast';
 import { degreesArrayToCompass, getTideMovementDescription, getLocalismColor } from '@/lib/compassUtils';
@@ -15,11 +15,13 @@ import {
   AlertTriangle, Users, Shield, CheckCircle2, Cloud,
   Car, Coffee, ArrowUpDown
 } from 'lucide-react';
+import { useSurferProfile } from '@/hooks/useSurferProfile';
 
 const SpotDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const spot = surfSpots.find(s => s.id === id);
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const { surferProfile, isPersonalized } = useSurferProfile();
   
   // Fetch real forecast data if spot exists
   const { data: forecastData, isLoading, isError } = useMarineForecast(
@@ -77,12 +79,10 @@ const SpotDetailPage: React.FC = () => {
       tideLevel: 1.0,
       confidence: 0.85
     };
-  } else {
-    forecast = mockForecast[spot.id]?.[0];
   }
   
   const fitResult = forecast 
-    ? calculateFitScore(spot, forecast, mockSurferProfile) 
+    ? calculateFitScore(spot, forecast, surferProfile)
     : null;
 
   return (
@@ -116,9 +116,10 @@ const SpotDetailPage: React.FC = () => {
           {isRealData && !isLoading && (
             <div className="flex items-center gap-2 text-sm text-success">
               <Cloud className="h-4 w-4" />
-              <span>Live forecast data</span>
+              <span>{isPersonalized ? 'Live forecast calibrated to your profile' : 'Live forecast data'}</span>
             </div>
           )}
+          {!isLoading && !isRealData && <span className="text-sm text-warning-foreground">Live forecast unavailable — no score is shown.</span>}
         </div>
       </div>
 
@@ -437,7 +438,7 @@ const SpotDetailPage: React.FC = () => {
                 <h4 className="font-medium mb-2 flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   Localism Level
-                  <Badge variant={getLocalismColor(spot.localismLevel) as any} className="capitalize">
+                  <Badge variant={getLocalismColor(spot.localismLevel) as BadgeProps['variant']} className="capitalize">
                     {spot.localismLevel}
                   </Badge>
                 </h4>

@@ -37,10 +37,10 @@ export async function fetchMarineForecast(
 ): Promise<ForecastResponse | null> {
   try {
     // Marine Weather API - wave forecasts
-    const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${latitude}&longitude=${longitude}&hourly=wave_height,wave_direction,wave_period,wind_wave_height,wind_wave_direction,wind_wave_period,swell_wave_height,swell_wave_direction,swell_wave_period&timezone=Australia/Melbourne&forecast_days=7`;
+    const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${latitude}&longitude=${longitude}&hourly=wave_height,wave_direction,wave_period,wind_wave_height,wind_wave_direction,wind_wave_period,swell_wave_height,swell_wave_direction,swell_wave_period&timezone=auto&forecast_days=7`;
     
     // Weather API - wind and temperature
-    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=temperature_2m,wind_speed_10m,wind_direction_10m&timezone=Australia/Melbourne&forecast_days=7`;
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=temperature_2m,wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=auto&forecast_days=7`;
 
     const [marineResponse, weatherResponse] = await Promise.all([
       fetch(marineUrl),

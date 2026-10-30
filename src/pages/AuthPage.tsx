@@ -135,10 +135,12 @@ const AuthPage = () => {
     }
     
     setLoading(true);
-    await resetPassword(validation.data.email);
+    const { error } = await resetPassword(validation.data.email);
     setLoading(false);
-    setForgotPasswordOpen(false);
-    setResetEmail('');
+    if (!error) {
+      setForgotPasswordOpen(false);
+      setResetEmail('');
+    }
   };
 
   const handlePasswordReset = async (e: React.FormEvent) => {
@@ -162,7 +164,7 @@ const AuthPage = () => {
     if (error) {
       toast({
         title: "Password reset failed",
-        description: error.message,
+        description: 'Unable to update your password. Please request a new reset link and try again.',
         variant: "destructive",
       });
     } else {

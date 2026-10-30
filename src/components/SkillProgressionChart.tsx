@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { TrendingUp, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,12 +18,7 @@ const SkillProgressionChart: React.FC = () => {
   const [skillHistory, setSkillHistory] = useState<SkillRecord[]>([]);
   const [currentSkillLevel, setCurrentSkillLevel] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchSkillHistory();
-    fetchCurrentSkillLevel();
-  }, [user]);
-
-  const fetchSkillHistory = async () => {
+  const fetchSkillHistory = useCallback(async () => {
     if (!user) return;
 
     const { data, error } = await supabase
@@ -37,9 +32,9 @@ const SkillProgressionChart: React.FC = () => {
     } else {
       setSkillHistory(data || []);
     }
-  };
+  }, [user]);
 
-  const fetchCurrentSkillLevel = async () => {
+  const fetchCurrentSkillLevel = useCallback(async () => {
     if (!user) return;
 
     const { data, error } = await supabase
@@ -53,7 +48,12 @@ const SkillProgressionChart: React.FC = () => {
     } else {
       setCurrentSkillLevel(data?.skill_level || null);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    void fetchSkillHistory();
+    void fetchCurrentSkillLevel();
+  }, [fetchCurrentSkillLevel, fetchSkillHistory]);
 
   const getSkillLevelColor = (level: string) => {
     switch (level) {
@@ -93,7 +93,7 @@ const SkillProgressionChart: React.FC = () => {
             <div>
               <p className="text-sm text-muted-foreground mb-1">Current Level</p>
               {currentSkillLevel ? (
-                <Badge variant={getSkillLevelBadge(currentSkillLevel) as any} className="capitalize text-base">
+                <Badge variant={getSkillLevelBadge(currentSkillLevel) as BadgeProps['variant']} className="capitalize text-base">
                   {currentSkillLevel}
                 </Badge>
               ) : (
@@ -103,7 +103,7 @@ const SkillProgressionChart: React.FC = () => {
             {currentIndex >= 0 && currentIndex < skillLevels.length - 1 && (
               <div className="text-right">
                 <p className="text-sm text-muted-foreground mb-1">Next Level</p>
-                <Badge variant={getSkillLevelBadge(skillLevels[currentIndex + 1]) as any} className="capitalize">
+                <Badge variant={getSkillLevelBadge(skillLevels[currentIndex + 1]) as BadgeProps['variant']} className="capitalize">
                   {skillLevels[currentIndex + 1]}
                 </Badge>
               </div>
@@ -154,7 +154,7 @@ const SkillProgressionChart: React.FC = () => {
                   <div className={`w-3 h-3 rounded-full mt-1 ${getSkillLevelColor(record.skill_level)}`} />
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <Badge variant={getSkillLevelBadge(record.skill_level) as any} className="capitalize text-xs">
+                      <Badge variant={getSkillLevelBadge(record.skill_level) as BadgeProps['variant']} className="capitalize text-xs">
                         {record.skill_level}
                       </Badge>
                       <span className="text-xs text-muted-foreground">

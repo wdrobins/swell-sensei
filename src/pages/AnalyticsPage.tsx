@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, MapPin, Target, Award } from "lucide-react";
 import { format, subDays, startOfDay } from "date-fns";
+import { getSpotId } from "@/lib/sessionUtils";
 
 interface AnalyticsData {
   totalSessions: number;
@@ -24,13 +25,7 @@ export default function AnalyticsPage() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchAnalytics();
-    }
-  }, [user]);
-
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -76,9 +71,9 @@ export default function AnalyticsPage() {
       // Top spots analysis
       const spotCounts: Record<string, number> = {};
       sessions?.forEach((session) => {
-        const prefs = session.spot_preferences as any;
-        if (prefs?.spot_id) {
-          spotCounts[prefs.spot_id] = (spotCounts[prefs.spot_id] || 0) + 1;
+        const spotId = getSpotId(session.spot_preferences);
+        if (spotId) {
+          spotCounts[spotId] = (spotCounts[spotId] || 0) + 1;
         }
       });
 
@@ -95,7 +90,7 @@ export default function AnalyticsPage() {
       }
       sessions?.forEach((session) => {
         const sessionDate = format(new Date(session.created_at), "MMM dd");
-        if (activityMap.hasOwnProperty(sessionDate)) {
+        if (Object.prototype.hasOwnProperty.call(activityMap, sessionDate)) {
           activityMap[sessionDate]++;
         }
       });
@@ -124,7 +119,13 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      void fetchAnalytics();
+    }
+  }, [fetchAnalytics, user]);
 
   if (loading) {
     return (

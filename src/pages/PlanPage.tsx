@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Calendar, Clock, MapPin, Waves, TrendingUp, ChevronRight, Star, Info, Navigation } from 'lucide-react';
 import { addDays, format, isToday, isTomorrow } from 'date-fns';
@@ -9,9 +9,11 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { surfSpots, mockSurferProfile, ForecastData } from '@/lib/mockData';
+import { surfSpots, ForecastData } from '@/lib/mockData';
 import { calculateFitScore, FitScoreResult } from '@/lib/fitScoring';
 import { checkAndAwardMilestones } from '@/lib/milestoneUtils';
+import type { Tables } from '@/integrations/supabase/types';
+import { useSurferProfile } from '@/hooks/useSurferProfile';
 
 interface TimeSlot {
   time: string;
@@ -75,14 +77,14 @@ const PlanPage: React.FC = () => {
   const [selectedTime, setSelectedTime] = useState<TimeSlot | null>(null);
   const [recommendations, setRecommendations] = useState<SpotRecommendation[]>([]);
   const [isBooking, setIsBooking] = useState(false);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const { surferProfile, isPersonalized } = useSurferProfile();
   const [maxDistance, setMaxDistance] = useState<number>(150); // km
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
 
   // Generate mock weekly forecast scores (1-10 scale)
-  const weeklyForecast = [
+  const weeklyForecast = useMemo(() => [
     { score: 8, conditions: '3-4ft Clean', quality: 'Good', swellHeight: 1.1, swellPeriod: 12, windSpeed: 12 },
     { score: 9, conditions: '4-5ft Offshore', quality: 'Excellent', swellHeight: 1.4, swellPeriod: 14, windSpeed: 8 },
     { score: 5, conditions: '2-3ft Onshore', quality: 'Fair', swellHeight: 0.8, swellPeriod: 9, windSpeed: 22 },
@@ -90,26 +92,8 @@ const PlanPage: React.FC = () => {
     { score: 3, conditions: '1-2ft Messy', quality: 'Poor', swellHeight: 0.5, swellPeriod: 7, windSpeed: 28 },
     { score: 7, conditions: '3-4ft Clean', quality: 'Good', swellHeight: 1.0, swellPeriod: 12, windSpeed: 10 },
     { score: 8, conditions: '4-5ft Glass', quality: 'Excellent', swellHeight: 1.3, swellPeriod: 15, windSpeed: 5 }
-  ];
+  ], []);
 
-  // Fetch user profile
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!user) return;
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('skill_level, experience_years, preferred_wave_size')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (!error && data) {
-        setUserProfile(data);
-      }
-    };
-
-    fetchUserProfile();
-  }, [user]);
 
   // Seeded random for consistent results per spot
   const seededRandom = (seed: number) => {
@@ -183,14 +167,14 @@ const PlanPage: React.FC = () => {
         confidence: 0.75 + spotVariation * 0.2
       };
 
-      const fitResult = calculateFitScore(spot, forecast, mockSurferProfile);
+      const fitResult = calculateFitScore(spot, forecast, surferProfile);
       return { spot, fitResult, forecast, distance: spot.distance };
     });
 
     // Sort by score and take top recommendations
     const sorted = spotScores.sort((a, b) => b.fitResult.score - a.fitResult.score);
     setRecommendations(sorted.slice(0, 5));
-  }, [selectedLocation, selectedDate, selectedTime, nearbySpots]);
+  }, [selectedLocation, selectedDate, selectedTime, nearbySpots, surferProfile, weeklyForecast]);
 
   const handleLocationSelect = (location: Location) => {
     setSelectedLocation(location);
@@ -322,8 +306,9 @@ const PlanPage: React.FC = () => {
           Plan Your Session
         </h1>
         <p className="text-muted-foreground">
-          Tell us where you are, and we'll find the best spot for your session
+          {isPersonalized ? `Choose a time and location for a plan calibrated to ${surferProfile.name}'s saved profile.` : 'Set up your profile before planning so recommendations can reflect your experience.'}
         </p>
+        <p className="mt-2 text-sm text-warning-foreground">Planning outlook is currently an estimate, not a live forecast. Check local conditions and tide before entering the water.</p>
       </div>
 
       {/* Step 1: Select Location */}
@@ -527,7 +512,7 @@ const PlanPage: React.FC = () => {
                         )}
                         <h3 className="text-lg font-semibold">{rec.spot.name}</h3>
                         <Badge 
-                          variant={rec.fitResult.color as any}
+                          variant={rec.fitResult.color as BadgeProps['variant']}
                           className="text-xs"
                         >
                           {rec.fitResult.label}

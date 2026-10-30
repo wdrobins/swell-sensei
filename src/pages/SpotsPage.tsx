@@ -8,11 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import SpotCard from '@/components/SpotCard';
-import { surfSpots, mockForecast, mockSurferProfile, ForecastData } from '@/lib/mockData';
+import { surfSpots, ForecastData } from '@/lib/mockData';
 import { calculateFitScore } from '@/lib/fitScoring';
 import { useMultipleSpotForecasts } from '@/hooks/useMarineForecast';
 import { calculateDistance, homeLocations } from '@/lib/compassUtils';
 import { Search, Filter, Cloud, MapPin, Navigation } from 'lucide-react';
+import { useSurferProfile } from '@/hooks/useSurferProfile';
 
 const SpotsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -22,6 +23,7 @@ const SpotsPage: React.FC = () => {
   const [skillFilter, setSkillFilter] = React.useState<string>('all');
   const [lifeguardedOnly, setLifeguardedOnly] = React.useState<boolean>(false);
   const [stateFilter, setStateFilter] = React.useState<string>('all');
+  const { surferProfile, isPersonalized } = useSurferProfile();
 
   // Extract unique states from spot regions
   const states = React.useMemo(() => {
@@ -97,13 +99,10 @@ const SpotsPage: React.FC = () => {
         tideLevel: 1.0, // Open-Meteo doesn't provide tide data
         confidence: 0.85
       };
-    } else {
-      // Fallback to mock data
-      forecast = mockForecast[spot.id]?.[0];
     }
     
     const result = forecast 
-      ? calculateFitScore(spot, forecast, mockSurferProfile)
+      ? calculateFitScore(spot, forecast, surferProfile)
       : null;
     
     return {
@@ -124,7 +123,7 @@ const SpotsPage: React.FC = () => {
           Surf Spots
         </h1>
         <p className="text-muted-foreground">
-          Find the perfect waves for your skill level and preferences
+          {isPersonalized ? `Live forecast scores calibrated to ${surferProfile.name}'s saved profile.` : 'Set up your profile to calibrate scores to your experience and wave comfort.'}
         </p>
         {isLoading && (
           <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">

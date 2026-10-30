@@ -7,12 +7,22 @@ import { Badge } from '@/components/ui/badge';
 import { BookOpen, Calendar, MapPin, Waves } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import { getFitScoreVariant } from '@/lib/sessionUtils';
+
+interface SessionPreferences {
+  date?: string;
+  time?: string;
+  timeLabel?: string;
+  score?: number;
+  spots?: string[];
+  conditions?: string;
+}
 
 interface Session {
   id: string;
   title: string;
-  description: string;
-  spot_preferences: any;
+  description: string | null;
+  spot_preferences: SessionPreferences | null;
   created_at: string;
   updated_at: string;
 }
@@ -121,11 +131,7 @@ const LogsPage = () => {
                           </div>
                         )}
                         {session.spot_preferences.score && (
-                          <Badge variant={
-                            session.spot_preferences.score >= 80 ? 'success' :
-                            session.spot_preferences.score >= 60 ? 'accent' :
-                            session.spot_preferences.score >= 40 ? 'warning' : 'destructive'
-                          }>
+                          <Badge variant={getFitScoreVariant(session.spot_preferences.score)}>
                             Score: {session.spot_preferences.score}
                           </Badge>
                         )}

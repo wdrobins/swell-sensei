@@ -1,10 +1,20 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import type { Json } from '@/integrations/supabase/types';
+
+interface MilestoneSession {
+  created_at: string;
+  spot_preferences?: { selectedSpots?: string[] } | null;
+}
+
+interface MilestoneGoal {
+  status: string;
+}
 
 export interface MilestoneCheck {
   userId: string;
-  sessions?: any[];
-  goals?: any[];
+  sessions?: MilestoneSession[];
+  goals?: MilestoneGoal[];
 }
 
 /**
@@ -36,7 +46,7 @@ export const checkAndAwardMilestones = async ({ userId, sessions, goals }: Miles
     // Check for session streak milestone (needs to check dates)
     if (!earnedTypes.has('session_streak') && sessions && sessions.length >= 7) {
       // This is simplified - in reality, you'd check for consecutive days
-      const recentSessions = sessions.filter((s: any) => {
+      const recentSessions = sessions.filter((s) => {
         const sessionDate = new Date(s.created_at);
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
@@ -57,7 +67,7 @@ export const checkAndAwardMilestones = async ({ userId, sessions, goals }: Miles
     // Check for spot explorer milestone
     if (!earnedTypes.has('spot_explorer') && sessions && sessions.length > 0) {
       const uniqueSpots = new Set(
-        sessions.flatMap((s: any) => s.spot_preferences?.selectedSpots || [])
+        sessions.flatMap((s) => s.spot_preferences?.selectedSpots || [])
       );
 
       if (uniqueSpots.size >= 5) {
@@ -73,7 +83,7 @@ export const checkAndAwardMilestones = async ({ userId, sessions, goals }: Miles
 
     // Check for goal achiever milestone
     if (!earnedTypes.has('goal_achiever') && goals) {
-      const completedGoals = goals.filter((g: any) => g.status === 'completed');
+      const completedGoals = goals.filter((g) => g.status === 'completed');
       
       if (completedGoals.length >= 3) {
         milestones.push({
@@ -135,7 +145,7 @@ export const awardMilestone = async (
   badgeType: string,
   badgeName: string,
   description: string,
-  metadata?: any
+  metadata?: Json
 ) => {
   try {
     // Check if already earned

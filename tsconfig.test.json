@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": ".test-dist",
+    "rootDir": "src/lib",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": false
+  },
+  "include": [
+    "src/lib/sessionUtils.ts",
+    "src/lib/sessionUtils.test.ts",
+    "src/lib/profileAdapter.ts",
+    "src/lib/profileAdapter.test.ts",
+    "src/lib/mockData.ts"
+  ]
+}

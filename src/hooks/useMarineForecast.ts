@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueries } from '@tanstack/react-query';
 import { fetchMarineForecast, getCurrentConditions, getDailySummary } from '@/lib/weatherService';
 
 /**
@@ -31,8 +31,8 @@ export function useMarineForecast(latitude: number, longitude: number, enabled =
  * Hook to fetch forecasts for multiple spots
  */
 export function useMultipleSpotForecasts(spots: Array<{ id: string; coordinates: [number, number] }>) {
-  const queries = spots.map(spot => {
-    return useQuery({
+  const queries = useQueries({
+    queries: spots.map(spot => ({
       queryKey: ['marine-forecast', spot.coordinates[0], spot.coordinates[1]],
       queryFn: async () => {
         const forecast = await fetchMarineForecast(spot.coordinates[0], spot.coordinates[1]);
@@ -47,7 +47,7 @@ export function useMultipleSpotForecasts(spots: Array<{ id: string; coordinates:
       staleTime: 1000 * 60 * 30,
       gcTime: 1000 * 60 * 60,
       retry: 1,
-    });
+    })),
   });
 
   return {

@@ -3,14 +3,16 @@ import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+type AuthResultError = AuthError | Error | null;
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, displayName?: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, displayName?: string) => Promise<{ error: AuthResultError }>;
+  signIn: (email: string, password: string) => Promise<{ error: AuthResultError }>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<{ error: any }>;
+  resetPassword: (email: string) => Promise<{ error: AuthResultError }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -101,13 +103,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       return { error };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const caughtError = error instanceof Error ? error : new Error('An unexpected error occurred.');
       toast({
         title: "Error",
-        description: getSafeErrorMessage(error, 'signup'),
+        description: getSafeErrorMessage(caughtError, 'signup'),
         variant: "destructive",
       });
-      return { error };
+      return { error: caughtError };
     }
   };
 
@@ -132,13 +135,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       return { error };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const caughtError = error instanceof Error ? error : new Error('An unexpected error occurred.');
       toast({
         title: "Error",
-        description: getSafeErrorMessage(error, 'signin'),
+        description: getSafeErrorMessage(caughtError, 'signin'),
         variant: "destructive",
       });
-      return { error };
+      return { error: caughtError };
     }
   };
 
@@ -180,13 +184,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       return { error };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const caughtError = error instanceof Error ? error : new Error('An unexpected error occurred.');
       toast({
         title: "Error",
-        description: getSafeErrorMessage(error, 'reset'),
+        description: getSafeErrorMessage(caughtError, 'reset'),
         variant: "destructive",
       });
-      return { error };
+      return { error: caughtError };
     }
   };
 

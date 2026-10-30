@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import type { Json } from '@/integrations/supabase/types';
 
 interface Milestone {
   id: string;
@@ -14,7 +15,7 @@ interface Milestone {
   badge_name: string;
   description: string | null;
   earned_at: string;
-  metadata: any;
+  metadata: Json | null;
 }
 
 const MilestoneBadges: React.FC = () => {
@@ -22,11 +23,7 @@ const MilestoneBadges: React.FC = () => {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchMilestones();
-  }, [user]);
-
-  const fetchMilestones = async () => {
+  const fetchMilestones = useCallback(async () => {
     if (!user) return;
 
     const { data, error } = await supabase
@@ -40,7 +37,11 @@ const MilestoneBadges: React.FC = () => {
     } else {
       setMilestones(data || []);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    void fetchMilestones();
+  }, [fetchMilestones]);
 
   const handleShare = async (milestone: Milestone) => {
     const shareText = `🏆 I just earned the "${milestone.badge_name}" badge! ${milestone.description}`;
