@@ -27,9 +27,9 @@ const Navigation: React.FC = () => {
               <Waves className="h-5 w-5 text-white" />
             </div>
             <div className="hidden sm:flex items-center gap-2">
-              <span className="font-bold text-foreground">Afterglow</span>
+              <span className="font-bold text-foreground">Swell Sensei</span>
               <Badge variant="secondary" className="text-[10px] tracking-wide uppercase">
-                Afterglow App
+                Swell Sensei App
               </Badge>
             </div>
           </Link>

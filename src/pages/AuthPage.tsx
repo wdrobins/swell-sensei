@@ -275,7 +275,7 @@ const AuthPage = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-lg shadow-float mb-4">
             <Waves className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Welcome to Afterglow</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Welcome to Swell Sensei</h1>
           <p className="text-white/80">Your personal surf guide</p>
         </div>
 

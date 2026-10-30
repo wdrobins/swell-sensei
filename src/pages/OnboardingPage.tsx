@@ -417,7 +417,7 @@ const OnboardingPage: React.FC = () => {
         <Card className="shadow-depth">
           <CardHeader>
             <CardTitle className="text-center">
-              Afterglow
+              Swell Sensei
             </CardTitle>
           </CardHeader>
           <CardContent>

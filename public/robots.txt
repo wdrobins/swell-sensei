@@ -1,3 +1,4 @@
 User-agent: *
 Allow: /
-Sitemap: https://app.afterglowsurfboards.com.au/sitemap.xml
+
+Sitemap: https://wdrobins.github.io/swell-sensei/sitemap.xml

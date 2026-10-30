@@ -28,7 +28,7 @@ const App = () => (
         <ErrorBoundary>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
+          <BrowserRouter basename={import.meta.env.BASE_URL}>
             <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
               <Navigation />
               <Routes>
