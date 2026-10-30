@@ -457,7 +457,7 @@ export function calculateFitScore(
       { time: 'Morning (8-10am)', score: finalScore, conditions: 'Current conditions' },
       { time: 'Afternoon (2-4pm)', score: afternoonScore, conditions: 'Stronger winds expected' }
     ],
-    citations: [`Forecast from Surfline & Windy, fetched ${new Date().toLocaleTimeString()} local`],
+    citations: ['Example conditions only — open a spot page for currently available Open-Meteo data.'],
     autoNoGo: false
   };
 }
