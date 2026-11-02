@@ -24,11 +24,17 @@ const queryClient = new QueryClient();
 
 const RootPage = () => {
   const navigate = useNavigate();
-  const isPasswordRecovery = new URLSearchParams(window.location.hash.substring(1)).get('type') === 'recovery';
+  const recoveryType = new URLSearchParams(window.location.hash.substring(1)).get('type');
+  const isPasswordRecovery = recoveryType === 'recovery'
+    || new URLSearchParams(window.location.search).get('reset-password') === '1';
 
   useEffect(() => {
     if (isPasswordRecovery) {
-      navigate('/auth', { replace: true });
+      navigate({
+        pathname: '/reset-password',
+        search: window.location.search,
+        hash: window.location.hash,
+      }, { replace: true });
     }
   }, [isPasswordRecovery, navigate]);
 
@@ -48,6 +54,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<RootPage />} />
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/reset-password" element={<AuthPage />} />
                 <Route path="/spots" element={<SpotsPage />} />
                 <Route path="/spots/:id" element={<SpotDetailPage />} />
                 

@@ -58,17 +58,22 @@ const AuthPage = () => {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   
-  // Check for password reset from email link (Supabase uses hash fragments)
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  // Supabase can return recovery metadata in either the query string or hash.
+  const [isResettingPassword, setIsResettingPassword] = useState(() => {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    return hashParams.get('type') === 'recovery'
+      || searchParams.get('type') === 'recovery'
+      || searchParams.get('reset-password') === '1';
+  });
 
   useEffect(() => {
-    // Check if this is a password recovery flow
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const type = hashParams.get('type');
-    
-    if (type === 'recovery') {
-      setIsResettingPassword(true);
-    }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsResettingPassword(true);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {

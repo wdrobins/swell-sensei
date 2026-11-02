@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex" />
+    <title>Opening Swell Sensei…</title>
+    <script>
+      (() => {
+        const appRoot = '/swell-sensei/';
+        const destination = new URL(appRoot, window.location.origin);
+        destination.search = window.location.search;
+        destination.searchParams.set('reset-password', '1');
+        destination.hash = window.location.hash;
+        window.location.replace(destination.toString());
+      })();
+    </script>
+  </head>
+  <body>
+    <p>Opening Swell Sensei password reset…</p>
+  </body>
+</html>

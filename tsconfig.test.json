@@ -14,6 +14,8 @@
     "src/lib/sessionUtils.test.ts",
     "src/lib/profileAdapter.ts",
     "src/lib/profileAdapter.test.ts",
+    "src/lib/authRedirect.ts",
+    "src/lib/authRedirect.test.ts",
     "src/lib/mockData.ts"
   ]
 }

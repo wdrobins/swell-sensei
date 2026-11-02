@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { useToast } from '@/hooks/use-toast';
 
 type AuthResultError = AuthError | Error | null;
@@ -76,7 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, displayName?: string) => {
     try {
-      const redirectUrl = new URL(import.meta.env.BASE_URL, window.location.origin).toString();
+      const redirectUrl = getAuthRedirectUrl(window.location.origin, import.meta.env.BASE_URL);
       
       const { error } = await supabase.auth.signUp({
         email,
@@ -164,7 +165,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const resetPassword = async (email: string) => {
     try {
-      const resetPasswordRedirectUrl = new URL(import.meta.env.BASE_URL, window.location.origin).toString();
+      const resetPasswordRedirectUrl = getAuthRedirectUrl(
+        window.location.origin,
+        import.meta.env.BASE_URL,
+        'reset-password',
+      );
       
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: resetPasswordRedirectUrl,
