@@ -112,7 +112,9 @@ const ForecastChart: React.FC<ForecastChartProps> = ({ dailyForecast, selectedDa
                       key={i}
                       className={`h-4 w-4 ${index === selectedDayIndex ? 'text-primary' : 'text-foreground'}`}
                       style={{
-                        transform: `rotate(${day.windDirection + (i - 1) * 15}deg)`,
+                        // Open-Meteo reports the compass bearing the wind comes FROM;
+                        // the arrow should show where the wind is travelling TO.
+                        transform: `rotate(${(day.windDirection + 180 + (i - 1) * 15) % 360}deg)`,
                       }}
                     />
                   ))}
