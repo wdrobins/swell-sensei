@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Swell Sensei</title>
+  <desc id="desc">A white breaking wave over a deep ocean-blue rounded square.</desc>
+  <defs>
+    <linearGradient id="ocean" x1="72" y1="38" x2="440" y2="474" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0EA5E9"/>
+      <stop offset="0.52" stop-color="#075985"/>
+      <stop offset="1" stop-color="#082F49"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#ocean)"/>
+  <path d="M74 330c44-24 82-35 120-33 36 2 70 15 102 38 35 25 75 28 121 10l22-9c-29 54-83 90-148 90H74v-96Z" fill="#38BDF8" opacity=".78"/>
+  <path d="M96 311c35-2 67-12 96-30 37-24 65-63 84-117 9-25 20-46 35-62 16 21 23 46 21 76-2 30-16 57-40 81 41-17 77-13 108 12 22 18 35 41 40 69-31-23-62-31-92-24-34 8-62 26-85 55-26 32-58 48-97 48-28 0-51-8-70-23v-85Z" fill="#F8FAFC"/>
+  <path d="M252 153c20 21 31 45 32 72 1 23-7 43-25 61 25-12 49-15 72-10-19-20-43-27-71-22 14-24 11-57-8-101Z" fill="#BAE6FD"/>
+  <path d="M112 404c47 8 91 2 132-18 43-20 80-29 111-27 25 2 45 8 61 18" fill="none" stroke="#E0F2FE" stroke-linecap="round" stroke-width="16" opacity=".9"/>
+</svg>
